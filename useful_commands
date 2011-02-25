@@ -1,0 +1,173 @@
+-- prereq: download & install tools
+wget http://mosaik-aligner.googlecode.com/files/Mosaik-1.1.0021-Linux-x64.tar.bz2
+tar jxf arch/Mosaik-1.1.0021-Linux-x64.tar.bz2
+
+wget http://bedtools.googlecode.com/files/BEDTools.v2.10.1.tar.gz
+tar zxf arch/BEDTools.v2.10.1.tar.gz
+ln -s BEDTools-version-2.10.1 BEDTools
+cd BEDTools
+make clean; make all
+
+wget -c wget http://genetics.bwh.harvard.edu/pph2/dokuwiki/_media/polyphen-2.0.23r347.tar.gz
+tar xzf polyphen-2.0.23r347.tar.gz
+cd polyphen-2.0.23/src
+make download && make clean && make && make install
+# according to install instructions
+# download pdb, dssp, uniprot:uniref100
+
+# 2010-12-21
+mkdir -p ~/wwpdb/all/pdb/
+rsync -rlptv --delete-after --port=33444 rsync.wwpdb.org::ftp/data/structures/divided/pdb/ ~/wwpdb/divided/pdb/
+rsync -rlptv --delete-after --port=33444 rsync.wwpdb.org::ftp/data/structures/all/pdb/ ~/wwpdb/all/pdb/
+
+mkdir ~/dssp/
+rsync -avz --delete-after rsync://rsync.cmbi.ru.nl/dssp/ ~/dssp/
+
+cd polyphen-2.0.23/nrdb
+wget ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/uniref/uniref100/uniref100.fasta.gz
+gunzip uniref100.fasta.gz
+../prepare_and_update/format_defline.pl uniref100.fasta >uniref100-formatted.fasta
+# 2010-12-22
+../../ncbi-blast-2.2.23+/bin/makeblastdb -in uniref100-formatted.fasta -dbtype prot -out uniref100 -title 'UniRef100 2010_12, 30-Nov-2010' -parse_seqids
+
+cd ~/src/polyphen-2.0.23uniprot/
+../prepare_and_update/uniprot.pl
+../prepare_and_update/unipfam.pl
+
+cd ../pdb2fasta
+../prepare_and_update/pdb2fasta.pl ~/wwpdb/all/pdb >pdb2fasta.log 2>&1 &
+
+configure
+# manual config follows..
+
+--current state of bussiness after this procedure + 
+bin/pph sets/test.input >test.output
+WARNING: Swapped input residues AA1 (V) and AA2 (M) for P12259 query sequence at position (1764)
+Can't locate Math/Interpolate.pm in @INC (@INC contains: /etc/perl /usr/lib64/perl5/vendor_perl/5.8.8/x86_64-linux /usr/lib64/perl5/vendor_perl/5.8.8 /usr/lib64/perl5/vendor_perl /usr/lib64/perl5/site_perl/5.8.8/x86_64-linux /usr/lib64/perl5/site_perl/5.8.8 /usr/lib64/perl5/site_perl /usr/lib64/perl5/5.8.8/x86_64-linux /usr/lib64/perl5/5.8.8 /usr/local/lib/site_perl .) at /home/daniel/src/polyphen-2.0.23/bin/run_weka.pl line 5.
+BEGIN failed--compilation aborted at /home/daniel/src/polyphen-2.0.23/bin/run_weka.pl line 5.
+
+
+# SIFT
+wget http://sift.jcvi.org/www/sift4.0.3.tar.gz
+cd db/Human_db_37/
+ncftp ftp://ftp.jcvi.org/pub/data/sift/
+* get Human_db_37/*
+gunzip *gz
+
+# cd to SIFT_home/bin directory and edit SIFT_exome_nssnvs.pl to change the line
+# $ENV{'SIFT_HOME'} = '/usr/local/projects/SIFT/sift4.0/';
+# to
+# $ENV{'SIFT_HOME'} = '<YOUR SIFT_HOME_PATH>';
+
+# error on run...sth with db-lookup is still not ok? 
+
+# ANNOVAR
+wget http://www.openbioinformatics.org/annovar/download/annovar.latest.tar.gz.mirror
+tar zxf arch/annovar.latest.tar.gz
+cd annovar
+./annotate_variation.pl --downdb gene --buildver hg19 humandb/
+#./annotate_variation.pl --downdb snp130 --buildver hg19 humandb/
+./annotate_variation.pl --downdb snp131 --buildver hg19 humandb/
+./annotate_variation.pl --downdb band --buildver hg19 humandb/
+./annotate_variation.pl --downdb mirna --buildver hg19 humandb/
+./annotate_variation.pl --downdb dgv --buildver hg19 humandb/
+./annotate_variation.pl --downdb omimgene --buildver hg19 humandb/
+./annotate_variation.pl --downdb gwascatalog --buildver hg19 humandb/
+./annotate_variation.pl --downdb 1000g2010nov --buildver hg19 humandb/
+./annotate_variation.pl --downdb avsift --buildver hg19 humandb/
+./annotate_variation.pl --downdb segdup --buildver hg19 humandb/
+./annotate_variation.pl --downdb mce46way --buildver hg19 humandb/
+# test autoannovar
+./auto_annovar.pl --buildver hg19 -model recessive example/ex2.human humandb/
+
+-- data
+# reference genome, rather clean chrs with updated mito-genome
+wget ftp://ftp.sanger.ac.uk/pub/1000genomes/tk2/main_project_reference/human_g1k_v37.fasta.gz
+wget ftp://ftp.sanger.ac.uk/pub/1000genomes/tk2/main_project_reference/human_g1k_v37.fasta.gz.md5
+if `md5sum --status -c human_g1k_v37.fasta.gz.md5` ; then echo ok; else echo oops; fi
+
+# gencode annotation. several others out there... see vega?
+wget -c ftp://ftp.sanger.ac.uk/pub/gencode/release_5/*
+sed -e 's/^chr//;' <gencode.v5.annotation.exons.gtf >gencode.v5.annotation.exons.chrname.gtf
+
+wget ftp://ftp-trace.ncbi.nlm.nih.gov/sra/sra-instant/reads/ByExp/sra/SRX/SRX012/SRX012142/SRR029011/SRR029011.sra
+(after first browsing for it using FireFox- not Safari...)
+
+# variation: a current dbSNP (v132)
+wget -c ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606/VCF/v4.0/00-All.vcf.gz
+
+# and a test Dane
+../../src/sratoolkit.2.0b5-centos_linux64/fastq-dump -A SRR029011 -D /home/daniel/hs_test/data/srrdl/SRR029011.sra
+
+-- align
+
+export MOSAIK_TMP = /tmp
+
+../src/mosaik-aligner/bin/MosaikBuild -fr human_g1k_v37.fasta.gz -oa human_g1k_v37.dat
+
+../src/mosaik-aligner/bin/MosaikJump -ia human_g1k_v37.dat -hs 15 -out human_g1k_v37.15 -mhp 100
+
+../src/mosaik-aligner/bin/MosaikBuild -q SRR029011.fastq -out SRR029011.dat -st illumina
+
+../src/mosaik-aligner/bin/MosaikAligner -in SRR029011.dat -ia human_g1k_v37.dat -out SRR029011.mosaik_aln.dat -m unique -hs 15 -bw 29 -j human_g1k_v37.15 -mhp 100 -mm 8 -act 20 -p 10
+
+## delta
+# suggested from MarthLab/M.S. on 76 bp Illumina reads:
+# -hs 15 -mm 12 -act 35
+## end delta
+
+../src/mosaik-aligner/bin/MosaikSort -in SRR029011.mosaik_aln.dat -out SRR029011.mosaik_aln.sorted.dat
+
+** or dup remove:
+# ../src/mosaik-aligner/bin/MosaikDupSnoop 
+# ../src/mosaik-aligner/bin/MosaikSort -dup 
+**
+
+../src/mosaik-aligner/bin/MosaikText -in SRR029011.mosaik_aln.sorted.dat -bam SRR029011.mosaik_aln.sorted.bam
+
+-- recal/realn (limited realn in samtools, but no recal?)
+GATK
+
+-- 				    
+get from http://sourceforge.net/projects/samtools/files/samtools/0.1.12/samtools-0.1.12a.tar.bz2/download
+tar jxf samtools-0.1.12a.tar.bz2
+make ; make razip
+--
+
+-- SNP-call
+-- samtools or GATK
+# samtools pileup
+
+../src/samtools-0.1.12a/samtools mpileup -ugf human_g1k_v37.fasta.gz | ../src/samtools-0.1.12a/bcftools/bcftools view -bvcg - > var.raw.bcf
+../src/samtools-0.1.12a/bcftools/bcftools view var.raw.bcf | ../src/samtools-0.1.12a/bcftools/vcfutils.pl varFilter -D200 > var.flt.vcf
+
+-- dbsnp
+-- filter dbSNP for MAF/validation (note, per population..)
+-- filter individuals for common variants
+# annotate known
+../src/BEDTools/bin/intersectBed -b var.flt.vcf -a data/00-All.vcf >  dbsnp132.SRR029011.overlap.bed
+# remove known
+ ../src/BEDTools/bin/intersectBed -v -a var.flt.vcf -b data/00-All.vcf >  SRR029011.notindbsnp132.bed
+
+# hi BAQ only
+awk '($6>=20) { print; }' SRR029011.notindbsnp132.bed > SRR029011.notindbsnp132.q20.bed
+
+# in exons
+../src/BEDTools/bin/intersectBed -a SRR029011.notindbsnp132.q20.bed -b ref/gencode.v5.annotation.exons.chrname.gtf >  SRR029011.notindbsnp132.q20.gencodev5_exons.bed
+# which exons?
+../src/BEDTools/bin/intersectBed -b SRR029011.notindbsnp132.q20.bed -a ref/gencode.v5.annotation.exons.chrname.gtf > gencodev5_exons.SRR029011.notindbsnp132.q20.bed
+
+# and for the complete 
+awk '($6>=20) { print; }' < var.flt.vcf > SRR029011.var.flt.q20.vcf
+../src/BEDTools/bin/intersectBed -b SRR029011.var.flt.q20.vcf -a ref/gencode.v5.annotation.exons.chrname.gtf > gencodev5_exons.SRR029011.var.flt.q20.bed
+
+-- SIFT from genome
+
+-- attribute to genes/pick particular regions
+
+-- polyphen2 or such severity estimate
+
+-- annovar
+# running from already produced vcf4 - convert2annovar otw prefers the pileup format...
+../src/annovar/convert2annovar.pl -format vcf4 SRR029011.var.flt.q20.vcf > SRR029011.varfltq20.avlist
+../src/annovar/annotate_variation.pl --buildver hg19 SRR029011.varfltq20.avlist ../src/annovar/humandb/

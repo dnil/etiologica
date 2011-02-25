@@ -1,0 +1,21 @@
+
+modular pipeline for disease gene implication
+
+[] target genome handling
+[] aligner
+
+[] target annotation set
+[] target gene set selection to speed later anaylsis?
+
+[] calibration/realigning
+[] snp-calling
+[] cnv calling
+
+[] common variation filter (new dbSNP ok?)
+[] control set filter
+
+[] variation attribution
+
+[] polyphen/other function guesstimates 
+
+[] QC/QC-esque reports
