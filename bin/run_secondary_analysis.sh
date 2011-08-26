@@ -15,7 +15,7 @@ BINDIR=/home/daniel/sandbox/etiologica/bin
 PIPELINEFUNK=$BINDIR/pipelinefunk.sh
 TMP=$SCRATCH
 
-REFERENCE=human_g1k_v37.dat
+REFERENCE=human_g1k_v37.fasta.gz
 
 MOSAIKBIN=/home/daniel/src/mosaik-aligner/bin
 SAMTOOLS=/home/daniel/src/samtools-0.1.12a/samtools
@@ -64,19 +64,6 @@ POD_INIT
 
 . $PIPELINEFUNK
 
-for dir in patient group metadata
-do 
-    if [ ! -d "$dir" ]
-    then
-	mkdir $dir 
-    fi
-done
-
-if [  "" != "`ls -1 | grep fastq.gz`"  ]
-then
-    mv *fastq.gz patient/
-fi
-
 # align
 
 export MOSAIK_TMP = $TMP
@@ -90,6 +77,23 @@ if needsUpdate $referencedat $REFERENCE $MOSAIKBIN
 then
     $MOSAIKBIN/MosaikBuild -fr $REFERENCE -oa $reference_dat
     $MOSAIKBIN/MosaikJump -ia $reference_dat -hs $mjump -out $reference_jump -mhp $mhp
+fi
+
+for dir in patient group metadata
+do 
+    if [ ! -d "$dir" ]
+    then
+	mkdir $dir 
+    fi
+done
+
+if [  "" != "`ls -1 | grep fastq.gz`"  ]
+then
+    for patientfastq in *fastq.gz
+    if [ "$patientfastq" != "$REFERENCE" ]	
+    then 
+	mv $patientfastq patient/
+    fi
 fi
 
 for patient_fastq_gz in patient/*fastq.gz
