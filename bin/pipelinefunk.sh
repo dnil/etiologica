@@ -12,7 +12,7 @@ Daniel Nilsson, daniel.nilsson@ki.se, daniel.k.nilsson@gmail.com
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright Daniel Nilsson, 2010. 
+Copyright Daniel Nilsson, 2010-2011. 
 
 The package is released under the Perl Artistic License.
 
@@ -170,6 +170,12 @@ C<result|temp>. Best practice is to call registerFile before actually
 starting to write the file, so that cleanup will find also partial
 files.
 
+CAVEAT: registerFile is not inherently multiple-worker safe. There
+would be a race condition between inventory of register and addition
+of a new item. This is not deemed severe, as the bulk (all?) of the
+filenames to be listed will come from work segments that are made
+exclusive through the work sharing lock. See workLockOk.
+
 =cut
 
 REGISTER_FUNCTION_DOC
@@ -188,17 +194,17 @@ function registerFile()
     # create on first use
     if [ ! -e $register ]
     then
-	touch $register
+	touch "$register"
     fi
-      
+
     # check that it's not already on the list?
     grep -x "$savefile" ${register} > /dev/null
     if [ $? -eq 0 ]
     then
 	# savefile was already on the register file
 	:
-    else
-	echo $savefile >> ${register} 
+    else       
+	echo "$savefile" >> ${register}
     fi
 }
 
@@ -206,46 +212,52 @@ function registerFile()
 #
 #=head2 flagActive(file)
 #
-# USAGE: flagActive file 
+#USAGE: flagActive file 
 #
 #Flags file as being written. Use to provide some protection against inconsistencies when a run is interrupted.
 #
-#NOT safe for multiple instances of pipelines running concurrently!
+#TODO: make a bit more multiple friendly by separating flag list 
+#
+# actually not very useful without good interruption traps - revisit when such are in place. 
+# atomic runs via temp output and moving files after operation successfully completes would be an option, but costs peak disk space
 #
 #FLAG_DOC
 #
-#flagfile=${pipelineregisterdir}/.pipeline.active.flag
-#
+#flagfile=${pipelineregisterdir}/.pipeline.$$.active.flag
+
 #function flagActive()
 #{
 #    local file=$1
+#
+#    local nowstamp=`date +%s`
+#
+#    touch ${file}.active.${nowstamp}
+#    echo ${file}.active.${nowstamp} > ${flagfile}
+#}
 
-#     local nowstamp=`date +%s`
+#function flagDone()
+#{
+#    if [ $? != 0 ] ... check return status for a little bit more protection?    
+#    rm -f `cat $flagfile`
+#    rm -f "$flagfile"
+#}
 
-#     touch ${file}.active.${nowstamp}
-#     echo ${file}.active.${nowstamp} > ${flagfile}
-# }
-
-# function flagDone()
-# {
-# #    if [ $? != 0 ] ... check return status for a little bit more protection?
-#     rm $flagfile
-# }
-
-# # remove any outstanding "active" files
-# if [ -e $flagfile ]
-# then
-#     rm `cat $flagfile`
-#     rm $flagfile
-# fi
+# remove any outstanding "active" files on load.
+#if [ -e $flagfile ]
+#then
+#    rm `cat $flagfile`
+#    rm "$flagfile"
+#fi
 
 : <<'CLEAN_FUNCTION_DOC'
 
 =head2 cleanCategory(category)
 
-USAGE: cleanCategory category Delete files registered with the
-cleanup system. Will recursively delete directories if
-registered. Category is currently limited to C<result|temp>.
+USAGE: cleanCategory category 
+
+Delete files registered with the cleanup system. Will recursively
+delete directories if registered. Category is currently limited to
+C<result|temp>.
 
 =cut
 
@@ -273,6 +285,71 @@ function cleanCategory()
     else
 	echo "No register file $register found. Directory was perhaps already clean?"
     fi
+}
+
+
+: <<'WORK_LOCK_OK'
+
+=head2 workLockOk(file)
+
+USAGE: workLockOk file  
+
+Attempt to obtain work lock for file. Return true if lock was
+obtained. Return false if lock was not obtained. Use e.g. to enable
+multiple workers to co-exist on the same directory. Lock eg raw file
+before entering a work segment. Carefully choose the file to lock to
+atomically lock all downstream work intended. This avoids both
+deadlocks and having another worker start a downstream segment on soon
+to be outdated previous results.  
+
+=cut
+
+WORK_LOCK_OK
+
+function workLockOk()
+{
+    local file=$1
+    
+    local lockfile=${file}.lock
+    local idstring=${HOSTNAME}"-"$$
+
+    if [ -a "$file" ] 
+    then
+	if ( set -o noclobber; echo "$idstring" > "$lockfile") 2> /dev/null;
+	then
+	    trap 'rm -f "$lockfile"; exit $?' INT TERM EXIT	    
+	fi
+    fi
+}
+
+: <<'POD_RELEASE_LOCK'
+
+=head2 releaseLock(file)
+
+USAGE: releaseLock file  
+
+Release work lock for file. Only call if an exclusive lock is already in effect.
+Will nevertheless perform simple check for ownership (hostname-script exclusive).
+
+=cut
+
+POD_RELEASE_LOCK
+
+function releaseLock()
+{
+    local file=$1
+    
+    local lockfile=${file}.lock
+    local idstring=${HOSTNAME}"-"$$
+
+    # check that we own the lock (basically this function should not be called without a lock, but better safe...)
+
+    if [ -a "$lockfile" && `cat $lockfile` == "$idstring" ] 
+    then
+ 	rm -f "$lockfile"
+    fi
+
+    trap - INT TERM EXIT
 }
 
 : << 'DOC_DIRECTIVE'
