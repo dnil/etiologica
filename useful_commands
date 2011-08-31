@@ -68,6 +68,7 @@ cd annovar
 ./annotate_variation.pl --downdb gene --buildver hg19 humandb/
 #./annotate_variation.pl --downdb snp130 --buildver hg19 humandb/
 ./annotate_variation.pl --downdb snp131 --buildver hg19 humandb/
+./annotate_variation.pl --downdb snp132 --buildver hg19 humandb/
 ./annotate_variation.pl --downdb band --buildver hg19 humandb/
 ./annotate_variation.pl --downdb mirna --buildver hg19 humandb/
 ./annotate_variation.pl --downdb dgv --buildver hg19 humandb/
@@ -170,4 +171,13 @@ awk '($6>=20) { print; }' < var.flt.vcf > SRR029011.var.flt.q20.vcf
 -- annovar
 # running from already produced vcf4 - convert2annovar otw prefers the pileup format...
 ../src/annovar/convert2annovar.pl -format vcf4 SRR029011.var.flt.q20.vcf > SRR029011.varfltq20.avlist
+
 ../src/annovar/annotate_variation.pl --buildver hg19 SRR029011.varfltq20.avlist ../src/annovar/humandb/
+
+# get precompiled polyphen2, mutationtaster etc scores
+/home/daniel/src/annovar/annotate_variation.pl --buildver hg19 --downdb ljb_pp2 --webfrom annovar /home/daniel/src/annovar/humandb/
+/home/daniel/src/annovar/annotate_variation.pl --buildver hg19 --downdb ljb_phylop --webfrom annovar /home/daniel/src/annovar/humandb/
+/home/daniel/src/annovar/annotate_variation.pl --buildver hg19 --downdb ljb_mt --webfrom annovar /home/daniel/src/annovar/humandb/
+/home/daniel/src/annovar/annotate_variation.pl --buildver hg19 --downdb ljb_lrt --webfrom annovar /home/daniel/src/annovar/humandb/
+/home/daniel/src/annovar/summarize_annovar.pl --buildver hg19 --verdbsnp 132 --outfile sum  s1.14_110610_l23_1.var.avlist /home/daniel/src/annovar/humandb/
+

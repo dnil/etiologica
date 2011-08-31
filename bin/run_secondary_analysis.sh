@@ -7,8 +7,12 @@
 # Documentation available in this file. Use e.g. perldoc to view, or pod2man to create a manual.
 
 # . etiologica_site_config.sh
+#
+# TODO: decide on parameter config structures // run log system
+#
 
 ### BEGIN USER SPECIFIC CONFIG
+
 
 BINDIR=/home/daniel/sandbox/etiologica/bin
 
@@ -18,10 +22,15 @@ REFERENCE=human_g1k_v37.fasta.gz
 
 MOSAIKBIN=/home/daniel/src/mosaik-aligner-read-only/bin
 ANNOVARBIN=/home/daniel/src/annovar
-SAMTOOLS=/home/daniel/src/samtools-0.1.12a/samtools
-BCFTOOLS=/home/daniel/src/samtools-0.1.12a/bcftools/bcftools
-VCFUTILS=/home/daniel/src/samtools-0.1.12a/bcftools/vcfutils.pl
+SAMTOOLS=/home/daniel/src/samtools-0.1.17/samtools
+BCFTOOLS=/home/daniel/src/samtools-0.1.17/bcftools/bcftools
+VCFUTILS=/home/daniel/src/samtools-0.1.17/bcftools/vcfutils.pl
 FASTQC=/home/daniel/src/FastQC/fastqc
+AVDBDIR=/home/daniel/src/annovar/humandb/
+
+mismatches=14
+sw_bandwidth=33
+clustersize=35
 
 ### END CONFIG
 
@@ -114,16 +123,9 @@ reference_dat=${REFERENCE%%.fasta.gz}.dat
 #
 # TODO: jump free version as well - conditional on total mem perhaps?
 #
-reference_jump=${reference_dat%%.dat}.$mjump
 mjump=15
 mhp=100
-
-#
-# TODO: decide on parameter config structures // run log system
-#
-mismatches=14
-sw_bandwidth=33
-clustersize=35
+reference_jump=${reference_dat%%.dat}.$mjump
 
 if needsUpdate $reference_dat $REFERENCE $MOSAIKBIN
 then
@@ -284,7 +286,7 @@ POD_MOSAIKDUP
 	patient_lib_dupdata_dir=${patient_aln_dat%%.mosaik.dat}_DupData
 	if [ "$MATEPAIRS" != 0 ] 
 	then
-	    if needsUpdate $patient_lib_dupdata_dir/.db $patient_aln_dat $MOSAIKBIN/MosaikDupSnoop
+	    if needsUpdate ${patient_lib_dupdata_dir}/.db $patient_aln_dat $MOSAIKBIN/MosaikDupSnoop
 	    then	
 		if [ ! -d $patient_lib_dupdata_dir ]
 		then
@@ -328,28 +330,41 @@ POD_MOSAIKDUP
 	patient_vcf=${patient_bcf%%raw.bcf}flt.vcf
 	if needsUpdate $patient_vcf $patient_bcf $BCFTOOLS $VCFUTILS
 	then
-	    $BCFTOOLS view $patient_bcf | $VCFUTILS varFilter -D200 > $patient_vcf
+	    $BCFTOOLS view $patient_bcf | $VCFUTILS varFilter -D1000 -d6 > $patient_vcf
+	    # -D200?  
 	    registerFile $patient_vcf result
 	fi
 	
-	patient_q20_vcf=${patient_vcf}
+	patient_q20_vcf=${patient_vcf%%vcf}q20.vcf
 	if needsUpdate $patient_q20_vcf $patient_vcf
 	then
 	    awk '($6>=20) { print; }' < $patient_vcf > $patient_q20_vcf
 	    registerFile $patient_q20_vcf result
 	fi
 
-	patient_avlist=${patient_q20_vcf%%flt.vcf}avlist
-	if needsUpdate $patient_avlist $patient_q20_vcf $ANNOVARBIN/convert2annovar.pl
+	patient_q20_avlist=${patient_q20_vcf%%vcf}avlist
+	if needsUpdate $patient_q20_avlist $patient_q20_vcf $ANNOVARBIN/convert2annovar.pl
 	then
-	    $ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_q20_vcf > $patient_avlist
+	    $ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_q20_vcf > $patient_q20_avlist
+	    registerFile $patient_q20_avlist result
+	fi
+
+	patient_avlist=${patient_vcf%%vcf}avlist
+	if needsUpdate $patient_avlist $patient_vcf $ANNOVARBIN/convert2annovar.pl
+	then
+	    $ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_vcf > $patient_avlist
 	    registerFile $patient_avlist result
 	fi
 
 	patient_exonic_variant=${patient_avlist}.exonic_variant_function
 	if needsUpdate $patient_exonic_variant $patient_avlist $ANNOVARBIN/annotate_variation.pl
 	then
-	    $ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_avlist /home/daniel/src/annovar/humandb/
+	    $ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_avlist $AVDBDIR
+	    $ANNOVARBIN/annotate_variation.pl --regionanno --buildver hg19 --dbtype dgv $patient_avlist $AVDBDIR
+	    
+	    export PATH=$PATH:"$ANNOVARBIN"
+	    $ANNOVARBIN/summarize_annovar.pl --buildver hg19 --verdbsnp 132 --outfile ${patient_fastq_gz%%.fastq.gz} $patient_avlist $AVDBDIR 
+
 #	    registerFile other_annovar_files temp
 	    registerFile $patient_exonic_variant result
 	fi

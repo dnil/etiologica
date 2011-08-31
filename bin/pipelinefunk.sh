@@ -313,12 +313,16 @@ function workLockOk()
     local lockfile=${file}.lock
     local idstring=${HOSTNAME}"-"$$
 
-    if [ -a "$file" ] 
+    if [ -a "$file" ]
     then
 	if ( set -o noclobber; echo "$idstring" > "$lockfile") 2> /dev/null;
 	then
-	    trap 'rm -f "$lockfile"; exit $?' INT TERM EXIT	    
+	    trap 'rm -f "$lockfile"; exit $?' INT TERM EXIT
+	    return 0;
+	else 
+	    return 1;
 	fi
+
     fi
 }
 
@@ -344,7 +348,7 @@ function releaseLock()
 
     # check that we own the lock (basically this function should not be called without a lock, but better safe...)
 
-    if [ -a "$lockfile" && `cat $lockfile` == "$idstring" ] 
+    if [ -a "$lockfile" -a "`cat $lockfile`" == "$idstring" ]
     then
  	rm -f "$lockfile"
     fi
