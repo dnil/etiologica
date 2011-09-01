@@ -1,0 +1,14 @@
+Etiologica - Pipelines and decision support tools for Massively Parallell Human Medical Genetics
+
+(c) Daniel Nilsson 2010-2011. 
+
+Released under the Perl Artistic License 2.0.
+
+Some of the main programs have embedded Plain Old Documentation. 
+Use e.g. perldoc or the pod2* programs (pod2html, pod2man, pod2txt, ...)
+to view these.
+
+ perldoc run_secondary_analysis.sh
+ perldoc pipelinefunk.sh
+
+Contact: daniel.nilsson.NO\/SPAM.scilifelab.se, daniel.nilsson.NO\/SPAM.ki.se, daniel.nilsson.NO\/SPAM.karolinska.se, daniel.k.nilsson.NO\/SPAM.gmail.com
