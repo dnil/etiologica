@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # (c)2011 Daniel Nilsson, daniel.nilsson@scilifelab.se, daniel.nilsson@karolinska.se, daniel.nilsson@ki.se
 # Copyright 2011, held by the author.
 # Released under the Perl Artistic License.
@@ -90,6 +89,8 @@ Can be overruled by directly setting TMP or MOSAIK_TMP, with the latter having t
 Number of cores to use for MOSAIK. 
 Defaults to the number of available cores (see NPROC in the pipelinefunc library).
 
+=back
+
 =cut
 
 POD_ENV
@@ -168,7 +169,7 @@ do
     if needsUpdate $patientfastqc_zip $patientfastq $FASTQC 
     then
 	# ensure that the zip archive exists before trying to lock it (first run).
-	touch $pastientfastqc_zip
+	touch $patientfastqc_zip
 
 	if workLockOk $patientfastqc_zip
 	then
