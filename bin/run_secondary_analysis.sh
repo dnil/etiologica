@@ -7,7 +7,7 @@
 
 # . etiologica_site_config.sh
 #
-# TODO: decide on parameter config structures // run log system
+# TODO: decide on parameter config structures 
 #
 
 ### BEGIN USER SPECIFIC CONFIG
@@ -15,6 +15,7 @@
 
 BINDIR=/home/daniel/sandbox/etiologica/bin
 
+PIPELINE=etiologica
 PIPELINEFUNK=$BINDIR/pipelinefunk.sh
 
 REFERENCE=human_g1k_v37.fasta.gz
@@ -27,9 +28,13 @@ VCFUTILS=/home/daniel/src/samtools-0.1.17/bcftools/vcfutils.pl
 FASTQC=/home/daniel/src/FastQC/fastqc
 AVDBDIR=/home/daniel/src/annovar/humandb/
 
+# MOSAIK settings
 mismatches=14
 sw_bandwidth=33
 clustersize=35
+
+# VCFTOOLS
+var_filter_settings="-D1000 -d6"
 
 ### END CONFIG
 
@@ -124,14 +129,25 @@ reference_dat=${REFERENCE%%.fasta.gz}.dat
 #
 # TODO: jump free version as well - conditional on total mem perhaps?
 #
-mjump=15
-mhp=100
-reference_jump=${reference_dat%%.dat}.$mjump
 
 if needsUpdate $reference_dat $REFERENCE $MOSAIKBIN
 then
-    $MOSAIKBIN/MosaikBuild -fr $REFERENCE -oa $reference_dat
-    $MOSAIKBIN/MosaikJump -ia $reference_dat -hs $mjump -out $reference_jump -mhp $mhp
+    runme="$MOSAIKBIN/MosaikBuild -fr $REFERENCE -oa $reference_dat"
+    vanillaRun "$runme" "$reference_dat" "temp" "MosaikBuild"
+fi
+
+if [ -z "$JUMP" ]
+    JUMP="yes"
+fi
+
+if [ "$jump" == "yes" ]
+then 
+    mjump=15
+    mhp=100
+    reference_jump=${reference_dat%%.dat}.$mjump
+
+    runme="$MOSAIKBIN/MosaikJump -ia $reference_dat -hs $mjump -out $reference_jump -mhp $mhp"    
+    vanillaRun "$runme" "$reference_jump" "temp" "MosaikJump"
 fi
 
 for dir in patient group metadata
@@ -173,8 +189,9 @@ do
 
 	if workLockOk $patientfastqc_zip
 	then
-	    $FASTQC $patientfastq
-	    registerFile $patientfastqc_zip result
+	    runme="$FASTQC $patientfastq"
+	    vanillaRun "$runme" "$patientfastqc_zip" "result" "FastQC"
+
 	    releaseLock $patientfastqc_zip
 	fi
     fi
@@ -245,15 +262,15 @@ do
 	then
 	    if needsUpdate $patient_dat $patient_fastq_gz
 	    then
-		$MOSAIKBIN/MosaikBuild -q $patient_fastq_gz -out $patient_dat -st illumina
-		registerFile $patient_dat temp
+		runme="$MOSAIKBIN/MosaikBuild -q $patient_fastq_gz -out $patient_dat -st illumina"
+		vanillaRun "$runme" "$patient_dat" "temp" "MosaikBuild"
 	    fi
 	else
 	    patient_2_fastq_gz=${patient_fastq_gz%%_1.fastq.gz}_2.fastq.gz
 	    if needsUpdate $patient_dat $patient_fastq_gz $patient_2_fastq_gz
 	    then
-		$MOSAIKBIN/MosaikBuild -q $patient_fastq_gz -q2 $patient_2_fastq_gz -out $patient_dat -st illumina
-		registerFile $patient_dat temp
+		runme="$MOSAIKBIN/MosaikBuild -q $patient_fastq_gz -q2 $patient_2_fastq_gz -out $patient_dat -st illumina"
+		vanillaRun "$runme" "$patient_dat" "temp" "MosaikBuild"
 	    fi
 	fi
 
@@ -264,11 +281,11 @@ do
 	    dupstring=""
 	fi
        
-
 	patient_aln_dat=${patient_dat%%dat}mosaik.dat
 	if needsUpdate $patient_aln_dat $patient_dat $reference_jump $MOSAIKBIN/MosaikAligner
 	then
-	    $MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_dat -m $MOSAIK_ALIGN_MODE -hs $mjump -bw $sw_bandwidth -j $reference_jump -mhp $mhp -mm $mismatches -act $clustersize -p $MOSAIK_CORES
+	    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_dat -m $MOSAIK_ALIGN_MODE -hs $mjump -bw $sw_bandwidth -j $reference_jump -mhp $mhp -mm $mismatches -act $clustersize -p $MOSAIK_CORES"
+	    vanillaRun "$runme" "$patient_aln_dat" "temp" "MosaikAligner"
 	    registerFile $patient_aln_dat temp
 	fi
 
@@ -288,14 +305,14 @@ POD_MOSAIKDUP
 	if [ "$MATEPAIRS" != 0 ] 
 	then
 	    if needsUpdate ${patient_lib_dupdata_dir}/.db $patient_aln_dat $MOSAIKBIN/MosaikDupSnoop
-	    then	
+	    then
 		if [ ! -d $patient_lib_dupdata_dir ]
 		then
 		    mkdir $patient_lib_dupdata_dir
 		fi
-	    
-		$MOSAIKBIN/MosaikDupSnoop -in $patient_aln_dat -od $patient_lib_dupdata_dir
-		registerFile $patient_dupdata_dir/.db temp
+		
+		runme="$MOSAIKBIN/MosaikDupSnoop -in $patient_aln_dat -od $patient_lib_dupdata_dir"
+		vanillaRun "$runme" "$patient_dupdata_dir/.db" "temp" "MosaikDupSnoop"
 	    fi
 	fi
 
@@ -308,9 +325,9 @@ POD_MOSAIKDUP
 	    else
 		dupstring="-dup $patient_lib_dupdata_dir"
 	    fi
-
-	    $MOSAIKBIN/MosaikSort -in $patient_aln_dat -out $patient_sorted $dupstring
-	    registerFile $patient_sorted temp
+	    
+	    runme="$MOSAIKBIN/MosaikSort -in $patient_aln_dat -out $patient_sorted $dupstring"
+	    vanillaRun "$runme" "$patient_sorted" "temp" "MosaikSort"
 	fi
 
        # TODO: mosaik merge, when several libs for one patient are available.
@@ -318,62 +335,68 @@ POD_MOSAIKDUP
 	patient_bam=${patient_sorted%%sorted.dat}bam
 	if needsUpdate ${patient_bam} ${patient_sorted} $MOSAIKBIN/MosaikText
 	then
-	    $MOSAIKBIN/MosaikText -in $patient_sorted -bam $patient_bam
-	    registerFile $patient_bam result
+	    runme="$MOSAIKBIN/MosaikText -in $patient_sorted -bam $patient_bam"
+	    vanillaRun "$runme" "$patient_bam" "result" "MosaikText -bam"
 	fi
 
 	patient_bcf=${patient_fastq_gz%%fastq.gz}var.raw.bcf
 	if needsUpdate $patient_bcf $patient_bam $SAMTOOLS $BCFTOOLS
 	then
-	    $SAMTOOLS mpileup -ugf $REFERENCE $patient_bam | $BCFTOOLS view -bvcg - > $patient_bcf
+	    runme="$SAMTOOLS mpileup -ugf $REFERENCE $patient_bam | $BCFTOOLS view -bvcg - > $patient_bcf"
+	    vanillaRun "$runme" "$patient_bcf" "temp" "samtools mpileup | bcftools view"
 	fi
 
 	patient_vcf=${patient_bcf%%raw.bcf}flt.vcf
 	if needsUpdate $patient_vcf $patient_bcf $BCFTOOLS $VCFUTILS
 	then
-	    $BCFTOOLS view $patient_bcf | $VCFUTILS varFilter -D1000 -d6 > $patient_vcf
-	    # -D200?  
-	    registerFile $patient_vcf result
+	    if [ -z "$var_filter_settings" ]
+	    then
+		var_filter_settings="-D1000 -d6"
+	    fi
+	    runme="$BCFTOOLS view $patient_bcf | $VCFUTILS varFilter $var_filter_settings > $patient_vcf"
+	    # -D200? 
+	    vanillaRun "$runme" "$patient_vcf" "result" "bcftools view |vcfutils varFilter"
 	fi
 	
 	patient_q20_vcf=${patient_vcf%%vcf}q20.vcf
 	if needsUpdate $patient_q20_vcf $patient_vcf
 	then
-	    awk '($6>=20) { print; }' < $patient_vcf > $patient_q20_vcf
+	    # generic baq-filter
+	    awk '($6>=20) { print; }' < $patient_vcf > $patient_q20_vcf	    
+	    checkExitStatus "Filter VCF to q20." "$patient_q20_vcf"
 	    registerFile $patient_q20_vcf result
 	fi
 
 	patient_q20_avlist=${patient_q20_vcf%%vcf}avlist
 	if needsUpdate $patient_q20_avlist $patient_q20_vcf $ANNOVARBIN/convert2annovar.pl
 	then
-	    $ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_q20_vcf > $patient_q20_avlist
-	    registerFile $patient_q20_avlist result
+	    runme="$ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_q20_vcf > $patient_q20_avlist"
+	    vanillaRun "$runme" "$patient_q20_avlist" "result" "convert2annovar q20"
 	fi
 
 	patient_avlist=${patient_vcf%%vcf}avlist
 	if needsUpdate $patient_avlist $patient_vcf $ANNOVARBIN/convert2annovar.pl
 	then
-	    $ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_vcf > $patient_avlist
-	    registerFile $patient_avlist result
+	    runme="$ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_vcf > $patient_avlist"
+	    vanillaRun "$runme" "$patient_avlist" "result" "convert2annovar"
 	fi
 
 	patient_exonic_variant=${patient_avlist}.exonic_variant_function
 	if needsUpdate $patient_exonic_variant $patient_avlist $ANNOVARBIN/annotate_variation.pl
 	then
-	    $ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_avlist $AVDBDIR
-	    $ANNOVARBIN/annotate_variation.pl --regionanno --buildver hg19 --dbtype dgv $patient_avlist $AVDBDIR
+	    runme="$ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_avlist $AVDBDIR"
+	    vanillaRun "$runme" "$patient_exonic_variant" "result" "ANNOVAR --geneanno"
 	    
-	    export PATH=$PATH:"$ANNOVARBIN"
-	    $ANNOVARBIN/summarize_annovar.pl --buildver hg19 --verdbsnp 132 --outfile ${patient_fastq_gz%%.fastq.gz} $patient_avlist $AVDBDIR 
-
+#	    $ANNOVARBIN/annotate_variation.pl --regionanno --buildver hg19 --dbtype dgv $patient_avlist $AVDBDIR
+#	    export PATH=$PATH:"$ANNOVARBIN"
+#	    $ANNOVARBIN/summarize_annovar.pl --buildver hg19 --verdbsnp 132 --outfile ${patient_fastq_gz%%.fastq.gz} $patient_avlist $AVDBDIR 
 #	    registerFile other_annovar_files temp
-	    registerFile $patient_exonic_variant result
+	    
 	fi
 
 	releaseLock $patient_fastq_gz
     fi
 done
-
 
 : << 'POD_END'
 

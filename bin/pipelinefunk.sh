@@ -208,6 +208,78 @@ function registerFile()
     fi
 }
 
+function progress()
+{
+    local message=$1
+    local status=$2
+
+    echo "${message}: $status"
+}
+
+
+function logMeta()
+{
+    local file=$1
+    local message=$2
+    
+    rundate=""
+    logfile="${file}.${PIPELINE}.log"
+
+    echo "[$rundate] $message" >>$logfile
+}
+
+function log()
+{
+    local message=$1
+    local category=$2 
+
+    if [ -z "$category" ]
+    then
+	category="main"
+    fi
+    
+    rundate=""
+
+    logfile="${PIPELINE}.${category}.log"
+    echo "[$rundate] $message" >>$logfile
+}
+
+function checkExitStatus()
+{
+    local message=$1
+    local garbled="${@:1}"
+    if [ $# > 1 ]
+    then
+	for garb in "${garbled[@]}"
+	do
+	    registerFile $garb attention
+	done
+    fi
+ 
+    exitstatus=$?
+    if [ $exitstatus > 0 ]
+    then
+	progress "$message" "Fail"
+	log "Error caught: $message. Possible garbled ${garbled[@]}. Please see .pipeline.register.attention and the  corresponding *.$PIPELINE.log files." "main"
+	exit $exitstatus
+    fi
+}
+
+function vanillaRun()
+{
+    local runme=$1
+    local main_result_file=$2
+    local main_result_category=$3
+    local label=$4
+
+    registerFile "$main_result_file" "$main_result_category"
+    logMeta "$main_result_file" "$runme"
+    eval $runme
+    checkExitStatus "$label" "$main_result_file"
+
+    progress "$label" "Done"
+}
+
 #: <<'FLAG_DOC'
 #
 #=head2 flagActive(file)
