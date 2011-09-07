@@ -32,6 +32,9 @@ AVDBDIR=/home/daniel/src/annovar/humandb/
 mismatches=14
 sw_bandwidth=33
 clustersize=35
+JUMP=yes
+mjump=15
+mhp=100
 
 # VCFTOOLS
 var_filter_settings="-D1000 -d6"
@@ -125,10 +128,16 @@ then
     fi
 fi
 
+for dir in patient group metadata
+do 
+    if [ ! -d "$dir" ]
+    then
+	mkdir $dir 
+    fi
+done
+
+
 reference_dat=${REFERENCE%%.fasta.gz}.dat
-#
-# TODO: jump free version as well - conditional on total mem perhaps?
-#
 
 if needsUpdate $reference_dat $REFERENCE $MOSAIKBIN
 then
@@ -137,26 +146,16 @@ then
 fi
 
 if [ -z "$JUMP" ]
+then
     JUMP="yes"
 fi
 
-if [ "$jump" == "yes" ]
-then 
-    mjump=15
-    mhp=100
+if [ "$JUMP" == "yes" ]
+then
     reference_jump=${reference_dat%%.dat}.$mjump
-
-    runme="$MOSAIKBIN/MosaikJump -ia $reference_dat -hs $mjump -out $reference_jump -mhp $mhp"    
+    runme="$MOSAIKBIN/MosaikJump -ia $reference_dat -hs $mjump -out $reference_jump -mhp $mhp"
     vanillaRun "$runme" "$reference_jump" "temp" "MosaikJump"
 fi
-
-for dir in patient group metadata
-do 
-    if [ ! -d "$dir" ]
-    then
-	mkdir $dir 
-    fi
-done
 
 if [ "" != "`ls -1 | grep fastq.gz`" ]
 then
@@ -284,9 +283,13 @@ do
 	patient_aln_dat=${patient_dat%%dat}mosaik.dat
 	if needsUpdate $patient_aln_dat $patient_dat $reference_jump $MOSAIKBIN/MosaikAligner
 	then
-	    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_dat -m $MOSAIK_ALIGN_MODE -hs $mjump -bw $sw_bandwidth -j $reference_jump -mhp $mhp -mm $mismatches -act $clustersize -p $MOSAIK_CORES"
+	    if [ "$JUMP" == "yes" ]
+	    then
+		runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_dat -m $MOSAIK_ALIGN_MODE -hs $mjump -bw $sw_bandwidth -j $reference_jump -mhp $mhp -mm $mismatches -act $clustersize -p $MOSAIK_CORES"
+	    else
+		runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_dat -m $MOSAIK_ALIGN_MODE -bw $sw_bandwidth -mm $mismatches -act $clustersize -p $MOSAIK_CORES"
+	    fi
 	    vanillaRun "$runme" "$patient_aln_dat" "temp" "MosaikAligner"
-	    registerFile $patient_aln_dat temp
 	fi
 
 	: <<POD_MOSAIKDUP
