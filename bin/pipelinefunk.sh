@@ -189,7 +189,7 @@ function registerFile()
     local savefile=$1
     local category=$2
 
-    register=${pipelineregisterdir}/.pipeline.register.$category
+    register=${pipelineregisterdir}/.${PIPELINE}.register.$category
 
     # create on first use
     if [ ! -e $register ]
@@ -216,13 +216,12 @@ function progress()
     echo "${message}: $status"
 }
 
-
 function logMeta()
 {
     local file=$1
     local message=$2
     
-    rundate=""
+    rundate=`date`
     logfile="${file}.${PIPELINE}.log"
 
     echo "[$rundate] $message" >>$logfile
@@ -238,7 +237,7 @@ function log()
 	category="main"
     fi
     
-    rundate=""
+    rundate=`date`
 
     logfile="${PIPELINE}.${category}.log"
     echo "[$rundate] $message" >>$logfile
@@ -246,21 +245,18 @@ function log()
 
 function checkExitStatus()
 {
-    local message=$1
-    local garbled="${@:1}"
-    if [ $# > 1 ]
+    local exitstatus=$1
+    local message=$2
+    local garbled="${@:3}"
+
+    if [ $exitstatus -ne 0 ]
     then
+	progress "$message" "Fail"
+	log "Error caught: $message. Possible garbled ${garbled[@]}. Please see .pipeline.register.attention and the corresponding *.$PIPELINE.log files." "main"
 	for garb in "${garbled[@]}"
 	do
 	    registerFile $garb attention
 	done
-    fi
- 
-    exitstatus=$?
-    if [ $exitstatus > 0 ]
-    then
-	progress "$message" "Fail"
-	log "Error caught: $message. Possible garbled ${garbled[@]}. Please see .pipeline.register.attention and the  corresponding *.$PIPELINE.log files." "main"
 	exit $exitstatus
     fi
 }
@@ -275,7 +271,8 @@ function vanillaRun()
     registerFile "$main_result_file" "$main_result_category"
     logMeta "$main_result_file" "$runme"
     eval $runme
-    checkExitStatus "$label" "$main_result_file"
+    exitstatus=$?
+    checkExitStatus "$exitstatus" "$label" "$main_result_file"
 
     progress "$label" "Done"
 }
@@ -339,7 +336,7 @@ function cleanCategory()
 {
     local category=$1
 
-    register=${pipelineregisterdir}/.pipeline.register.${category}
+    register=${pipelineregisterdir}/.${PIPELINE}.register.${category}
  
     if [ -e "$register" ] 
     then
@@ -352,7 +349,7 @@ function cleanCategory()
 		rm "$file"
 	    fi
 	done
-	rm "${pipelineregisterdir}/.pipeline.register.${category}"
+	rm "$register"
 	echo "Cleaned up ${category} files."
     else
 	echo "No register file $register found. Directory was perhaps already clean?"
