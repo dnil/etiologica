@@ -181,3 +181,5 @@ awk '($6>=20) { print; }' < var.flt.vcf > SRR029011.var.flt.q20.vcf
 /home/daniel/src/annovar/annotate_variation.pl --buildver hg19 --downdb ljb_lrt --webfrom annovar /home/daniel/src/annovar/humandb/
 /home/daniel/src/annovar/summarize_annovar.pl --buildver hg19 --verdbsnp 132 --outfile sum  s1.14_110610_l23_1.var.avlist /home/daniel/src/annovar/humandb/
 
+# reading logs with plenty of carriage return and escape code coloring material (Mosaik)
+sed -e's/\r//g; s/\x1B//g; s/\[1;[0-9][0-9]m//g; s/\[0m//;' slurm-1410474.out |grep -v reads\/s 

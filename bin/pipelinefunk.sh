@@ -208,13 +208,43 @@ function registerFile()
     fi
 }
 
+: <<'FUNCTION_PROGRESS_DOC'
+
+=head2 progress(message, status) 
+
+ USAGE: progress message_naming_jobpart status
+ 
+Output progress message to user. TODO: Prettify to use terminal better
+
+ progress "MosaikBuild" "Done"
+
+=cut
+
+FUNCTION_PROGRESS_DOC
+
 function progress()
 {
     local message=$1
     local status=$2
 
-    echo "${message}: $status"
+    local rundate=`date`
+    local idstring=${HOSTNAME}"-"$$
+
+    echo "[$rundate $idstring] ${message}: $status"
 }
+
+: <<'FUNCTION_LOGMETA_DOC'
+
+=head2 logMeta(file, message)
+
+ USAGE: logMeta file message
+ 
+Output information to file meta log file. Typically used to store
+commands to recreate file, versions of creating program etc.
+
+=cut
+
+FUNCTION_LOGMETA_DOC
 
 function logMeta()
 {
@@ -227,10 +257,26 @@ function logMeta()
     echo "[$rundate] $message" >>$logfile
 }
 
+: <<'FUNCTION_LOGMETA_DOC'
+
+=head2 log(message, category)
+
+ USAGE: logMeta message category
+ 
+Output information to a project main log file. Typically used to store
+overall run status. Note that a common log file may be used concurrently by 
+several workers, so multiline messages that need to be ordered should be 
+stored locally and then concatenated to log (using this function) as one string.
+
+=cut
+
+FUNCTION_LOGMETA_DOC
+
+# todo: message array 
 function log()
 {
     local message=$1
-    local category=$2 
+    local category=$2
 
     if [ -z "$category" ]
     then
@@ -249,7 +295,7 @@ function checkExitStatus()
     local message=$2
     local garbled="${@:3}"
 
-    if [ $exitstatus -ne 0 ]
+    if [ "$exitstatus" -ne "0" ]
     then
 	progress "$message" "Fail"
 	log "Error caught: $message. Possible garbled ${garbled[@]}. Please see .pipeline.register.attention and the corresponding *.$PIPELINE.log files." "main"
