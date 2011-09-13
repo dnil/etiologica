@@ -128,6 +128,11 @@ then
     fi
 fi
 
+if [ -z "$JUMP" ]
+then
+    JUMP="yes"
+fi
+
 for dir in patient group metadata
 do 
     if [ ! -d "$dir" ]
@@ -135,7 +140,6 @@ do
 	mkdir $dir 
     fi
 done
-
 
 reference_dat=${REFERENCE%%.fasta.gz}.dat
 
@@ -145,16 +149,14 @@ then
     vanillaRun "$runme" "$reference_dat" "temp" "MosaikBuild"
 fi
 
-if [ -z "$JUMP" ]
-then
-    JUMP="yes"
-fi
-
 if [ "$JUMP" == "yes" ]
 then
     reference_jump=${reference_dat%%.dat}.$mjump
-    runme="$MOSAIKBIN/MosaikJump -ia $reference_dat -hs $mjump -out $reference_jump -mhp $mhp"
-    vanillaRun "$runme" "$reference_jump" "temp" "MosaikJump"
+    if needsUpdate $reference_jump $reference_dat $MOSAIKBIN/MosaikJump
+    then
+	runme="$MOSAIKBIN/MosaikJump -ia $reference_dat -hs $mjump -out $reference_jump -mhp $mhp"
+	vanillaRun "$runme" "$reference_jump" "temp" "MosaikJump"
+    fi
 fi
 
 if [ "" != "`ls -1 | grep fastq.gz`" ]
@@ -241,7 +243,7 @@ fi
 if [ "$MATEPAIRS" == "0" ]
 then
     patient_fastq_list=( patient/*fastq.gz )
-else 
+else
     patient_fastq_list=( patient/*_1.fastq.gz )
 fi
 
@@ -315,7 +317,7 @@ POD_MOSAIKDUP
 		fi
 		
 		runme="$MOSAIKBIN/MosaikDupSnoop -in $patient_aln_dat -od $patient_lib_dupdata_dir"
-		vanillaRun "$runme" "$patient_dupdata_dir/.db" "temp" "MosaikDupSnoop"
+		vanillaRun "$runme" "$patient_lib_dupdata_dir/.db" "temp" "MosaikDupSnoop"
 	    fi
 	fi
 
@@ -346,7 +348,7 @@ POD_MOSAIKDUP
 	if needsUpdate $patient_bcf $patient_bam $SAMTOOLS $BCFTOOLS
 	then
 	    runme="$SAMTOOLS mpileup -ugf $REFERENCE $patient_bam | $BCFTOOLS view -bvcg - > $patient_bcf"
-	    vanillaRun "$runme" "$patient_bcf" "temp" "samtools mpileup | bcftools view"
+	    vanillaRun "$runme" "$patient_bcf" "temp" "samtools mpileup - bcftools view"
 	fi
 
 	patient_vcf=${patient_bcf%%raw.bcf}flt.vcf
