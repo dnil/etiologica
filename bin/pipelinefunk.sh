@@ -277,6 +277,35 @@ function vanillaRun()
     progress "$label" "Done"
 }
 
+
+# function setOnEmpty()
+# {
+#     local varname=$1
+#     local default=$2
+#     local export=$3
+#     local path_of=$4
+    
+#     if [ ! -z "$path_of" ]
+#     then
+# 	local path_of_target=`which $path_of`
+# 	if [ ! -z "$path_of_target" ]
+# 	then
+# 	    local dir_of=`dirname $mosaik_aligner`
+# 	    eval "${varname}=$dir_of"
+# 	else 
+# 	    eval "${varname}=$default"
+# 	fi	
+#     else 
+# 	$varname=$default
+#     fi
+    
+#     if [ "$export" == "yes" ]
+#     then
+# 	eval "export $varname"
+#     fi
+	    
+# }
+
 #: <<'FLAG_DOC'
 #
 #=head2 flagActive(file)

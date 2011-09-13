@@ -10,36 +10,7 @@
 # TODO: decide on parameter config structures 
 #
 
-### BEGIN USER SPECIFIC CONFIG
-
-
-BINDIR=/home/daniel/sandbox/etiologica/bin
-
-PIPELINE=etiologica
-PIPELINEFUNK=$BINDIR/pipelinefunk.sh
-
-REFERENCE=human_g1k_v37.fasta.gz
-
-MOSAIKBIN=/home/daniel/src/mosaik-aligner-read-only/bin
-ANNOVARBIN=/home/daniel/src/annovar
-SAMTOOLS=/home/daniel/src/samtools-0.1.17/samtools
-BCFTOOLS=/home/daniel/src/samtools-0.1.17/bcftools/bcftools
-VCFUTILS=/home/daniel/src/samtools-0.1.17/bcftools/vcfutils.pl
-FASTQC=/home/daniel/src/FastQC/fastqc
-AVDBDIR=/home/daniel/src/annovar/humandb/
-
-# MOSAIK settings
-mismatches=14
-sw_bandwidth=33
-clustersize=35
-JUMP=yes
-mjump=15
-mhp=100
-
-# VCFTOOLS
-var_filter_settings="-D1000 -d6"
-
-### END CONFIG
+my_path=$_
 
 ### BEGIN MAIN DOCUMENTATION
 
@@ -77,7 +48,7 @@ POD_INIT
 
 ### END INITIAL DOCUMENTATION -- more to follow inline where appropriate.
 
-. $PIPELINEFUNK
+### ENVIRONMENT VARIABLES
 
 : <<POD_ENV
 
@@ -92,10 +63,26 @@ The pipeline adheres to environment exported variables.
 Designated temp area. Please make it local and sufficiently big for the sake of MOSAIK.
 Can be overruled by directly setting TMP or MOSAIK_TMP, with the latter having the highest precedence rank.
 
+=item C<BINDIR> I<path>
+
+The path to the etiologia pipeline bin dir. Defaults to the (absolute) dir of the main script.
+
+=item C<REFERENCE> I<genome.fasta.gz>
+
+Reference genome sequence. Defaults to human_g1k_v27.fasta.gz. 
+
+=item C<MOSAIKBIN> I<path>
+
+Path to the Mosaik-aligner binary files. 
+
 =item C<MOSAIK_CORES> I<int>
 
 Number of cores to use for MOSAIK. 
 Defaults to the number of available cores (see NPROC in the pipelinefunc library).
+
+=item C<ANNOVARBIN> I<path>
+
+Path to the annovar main scripts.
 
 =back
 
@@ -103,14 +90,98 @@ Defaults to the number of available cores (see NPROC in the pipelinefunc library
 
 POD_ENV
 
-if [ -z "$SCRATCH" ]
+if [ -z "$BINDIR" ]
+then 
+    BINDIR=`basename $my_path`
+fi
+
+if [ -z "$REFERENCE" ]
+then 
+    REFERENCE=human_g1k_v37.fasta.gz
+fi
+
+if [ -z "$MOSAIKBIN" ]
 then
-    TMP=$SCRATCH
-fi 
+    mosaik_aligner=`which MosaikAligner`
+    if [ ! -z "$mosaik_aligner" ]
+    then
+	MOSAIKBIN=`dirname $mosaik_aligner`
+    else
+	MOSAIKBIN=/home/daniel/src/mosaik-aligner-read-only/bin
+    fi
+fi
+
+if [ -z "$ANNOVARBIN" ]
+then
+    ANNOVARBIN=/home/daniel/src/annovar
+fi
+
+if [ -z "$SAMTOOLS" ]
+then 
+    SAMTOOLS=/home/daniel/src/samtools-0.1.17/samtools
+fi
+
+if [ -z "$BCFTOOLS" ]
+then 
+    BCFTOOLS=/home/daniel/src/samtools-0.1.17/bcftools/bcftools
+fi
+
+if [ -z "$VCFUTILS" ]
+then
+    VCFUTILS=/home/daniel/src/samtools-0.1.17/bcftools/vcfutils.pl
+fi
+
+if [ -z "$FASTQC" ]
+then 
+    FASTQC=/home/daniel/src/FastQC/fastqc
+fi
+
+if [ -z "$AVDBDIR" ]
+then
+    AVDBDIR=/home/daniel/src/annovar/humandb/
+fi
 
 if [ -z "$TMP" ] 
+then
+    if [ -z "$SNIC_TMP" ]
+    then
+	export TMP=/tmp
+    else
+	export TMP=$SNIC_TMP
+    fi
+fi
+
+# MOSAIK settings
+
+if [ -z "$MOSAIK_mismatches" ]
 then 
-    export TMP=/tmp
+    MOSAIK_mismatches=14
+fi 
+
+if [ -z "$sw_bandwidth" ]
+then
+    MOSAIK_sw_bandwidth=33
+fi
+
+if [ -z "$clustersize" ]
+then
+    MOSAIK_clustersize=35
+fi
+
+
+if [ -z "$MOSAIK_JUMP" ]
+then
+    MOSAIK_JUMP="yes"
+fi
+
+if [ -z "$MOSAIK_mjump" ]
+then 
+    MOSAIK_mjump=15
+fi
+
+if [ -z $MOSAIK_mhp ]
+then
+    MOSAIK_mhp=100
 fi
 
 if [ -z "$MOSAIK_TMP" ]
@@ -128,6 +199,29 @@ then
     fi
 fi
 
+# VCFTOOLS
+
+if [ -z "$VCFUTILS_min_call_cov" ]
+then
+    VCFUTILS_min_call_cov=6
+fi
+
+if [ -z "$VCFUTILS_max_call_cov" ] 
+then
+    VCFUTILS_max_call_cov=400
+fi
+
+VCFUTILS_var_filter_settings="-D${VCFUTILS_max_call_cov} -d${VCFUTILS_min_call_cov}"
+
+PIPELINE=etiologica
+PIPELINEFUNK=$BINDIR/pipelinefunk.sh
+
+. $PIPELINEFUNK
+
+# log() all settings!
+
+### end environment variable processing
+
 for dir in patient group metadata
 do 
     if [ ! -d "$dir" ]
@@ -136,25 +230,19 @@ do
     fi
 done
 
-
 reference_dat=${REFERENCE%%.fasta.gz}.dat
+reference_jump=${reference_dat%%.dat}.$MOSAIK_mjump
 
 if needsUpdate $reference_dat $REFERENCE $MOSAIKBIN
 then
     runme="$MOSAIKBIN/MosaikBuild -fr $REFERENCE -oa $reference_dat"
     vanillaRun "$runme" "$reference_dat" "temp" "MosaikBuild"
-fi
 
-if [ -z "$JUMP" ]
-then
-    JUMP="yes"
-fi
-
-if [ "$JUMP" == "yes" ]
-then
-    reference_jump=${reference_dat%%.dat}.$mjump
-    runme="$MOSAIKBIN/MosaikJump -ia $reference_dat -hs $mjump -out $reference_jump -mhp $mhp"
-    vanillaRun "$runme" "$reference_jump" "temp" "MosaikJump"
+    if [ "$JUMP" == "yes" ]
+    then
+	runme="$MOSAIKBIN/MosaikJump -ia $reference_dat -hs $MOSAIK_mjump -out $reference_jump -mhp $MOSAIK_mhp"
+	vanillaRun "$runme" "$reference_jump" "temp" "MosaikJump"
+    fi
 fi
 
 if [ "" != "`ls -1 | grep fastq.gz`" ]
@@ -285,9 +373,9 @@ do
 	then
 	    if [ "$JUMP" == "yes" ]
 	    then
-		runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_dat -m $MOSAIK_ALIGN_MODE -hs $mjump -bw $sw_bandwidth -j $reference_jump -mhp $mhp -mm $mismatches -act $clustersize -p $MOSAIK_CORES"
+		runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_dat -m $MOSAIK_ALIGN_MODE -hs $MOSAIK_mjump -bw $MOSAIK_sw_bandwidth -j $reference_jump -mhp $MOSAIK_mhp -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -p $MOSAIK_CORES"
 	    else
-		runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_dat -m $MOSAIK_ALIGN_MODE -bw $sw_bandwidth -mm $mismatches -act $clustersize -p $MOSAIK_CORES"
+		runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_dat -m $MOSAIK_ALIGN_MODE -bw $MOSAIK_sw_bandwidth -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -p $MOSAIK_CORES"
 	    fi
 	    vanillaRun "$runme" "$patient_aln_dat" "temp" "MosaikAligner"
 	fi
@@ -352,11 +440,12 @@ POD_MOSAIKDUP
 	patient_vcf=${patient_bcf%%raw.bcf}flt.vcf
 	if needsUpdate $patient_vcf $patient_bcf $BCFTOOLS $VCFUTILS
 	then
+	    
 	    if [ -z "$var_filter_settings" ]
 	    then
 		var_filter_settings="-D1000 -d6"
 	    fi
-	    runme="$BCFTOOLS view $patient_bcf | $VCFUTILS varFilter $var_filter_settings > $patient_vcf"
+	    runme="$BCFTOOLS view $patient_bcf | $VCFUTILS varFilter $VCFUTILS_var_filter_settings > $patient_vcf"
 	    # -D200? 
 	    vanillaRun "$runme" "$patient_vcf" "result" "bcftools view |vcfutils varFilter"
 	fi
@@ -365,9 +454,8 @@ POD_MOSAIKDUP
 	if needsUpdate $patient_q20_vcf $patient_vcf
 	then
 	    # generic baq-filter
-	    awk '($6>=20) { print; }' < $patient_vcf > $patient_q20_vcf	    
-	    checkExitStatus "Filter VCF to q20." "$patient_q20_vcf"
-	    registerFile $patient_q20_vcf result
+	    runme="awk '($6>=20) { print; }' < $patient_vcf > $patient_q20_vcf"
+	    vanillaRun "$runme" "$patient_q20_vcf" "result" "Filter VCF to q20."
 	fi
 
 	patient_q20_avlist=${patient_q20_vcf%%vcf}avlist
@@ -376,7 +464,7 @@ POD_MOSAIKDUP
 	    runme="$ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_q20_vcf > $patient_q20_avlist"
 	    vanillaRun "$runme" "$patient_q20_avlist" "result" "convert2annovar q20"
 	fi
-
+	
 	patient_avlist=${patient_vcf%%vcf}avlist
 	if needsUpdate $patient_avlist $patient_vcf $ANNOVARBIN/convert2annovar.pl
 	then
@@ -394,7 +482,6 @@ POD_MOSAIKDUP
 #	    export PATH=$PATH:"$ANNOVARBIN"
 #	    $ANNOVARBIN/summarize_annovar.pl --buildver hg19 --verdbsnp 132 --outfile ${patient_fastq_gz%%.fastq.gz} $patient_avlist $AVDBDIR 
 #	    registerFile other_annovar_files temp
-	    
 	fi
 
 	releaseLock $patient_fastq_gz
