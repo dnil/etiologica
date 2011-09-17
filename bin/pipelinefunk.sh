@@ -283,10 +283,11 @@ function log()
 	category="main"
     fi
     
-    rundate=`date`
+    local rundate=`date`
+    local idstring=${HOSTNAME}"-"$$
 
     logfile="${PIPELINE}.${category}.log"
-    echo "[$rundate] $message" >>$logfile
+    echo "[$rundate $idstring] $message" >>$logfile
 }
 
 function checkExitStatus()

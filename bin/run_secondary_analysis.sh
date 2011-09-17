@@ -95,10 +95,74 @@ then
     BINDIR=`basename $my_path`
 fi
 
+PIPELINE=etiologica
+PIPELINEFUNK=$BINDIR/pipelinefunk.sh
+
+. $PIPELINEFUNK
+log "Running $PIPELINE." "main"
+log "BINDIR: $BINDIR" "main"
+
 if [ -z "$REFERENCE" ]
 then 
     REFERENCE=human_g1k_v37.fasta.gz
 fi
+log "REFERENCE: $REFERENCE" "main"
+
+if [ -z "$SAMTOOLS" ]
+then 
+    SAMTOOLS=/home/daniel/src/samtools-0.1.17/samtools
+fi
+log "SAMTOOLS: $SAMTOOLS" "main"
+
+if [ -z "$BCFTOOLS" ]
+then 
+    BCFTOOLS=/home/daniel/src/samtools-0.1.17/bcftools/bcftools
+fi
+log "BCFTOOLS: $BCFTOOLS" "main"
+
+if [ -z "$VCFUTILS" ]
+then
+    VCFUTILS=/home/daniel/src/samtools-0.1.17/bcftools/vcfutils.pl
+fi
+log "VCFUTILS: $VCFUTILS" "main"
+
+if [ -z "$FASTQC" ]
+then 
+    FASTQC=/home/daniel/src/FastQC/fastqc
+fi
+log "FASTQC: $FASTQC" "main"
+
+if [ -z "$ANNOVARBIN" ]
+then
+    ANNOVARBIN=/home/daniel/src/annovar
+fi
+log "SAMTOOLS: $SAMTOOLS" "main"
+
+if [ -z "$AVDBDIR" ]
+then
+    AVDBDIR=/home/daniel/src/annovar/humandb/
+fi
+log "ANNOVAR AVDBDIR: $AVDBDIR" "main"
+
+if [ -z "$ANNOVAR_1KG_MAFR" ]
+then
+    ANNOVAR_1KG_MAF=0.1
+fi
+log "ANNOVAR 1KG_MAF: $ANNOVAR_1KG_MAF" "main"
+
+
+if [ -z "$TMP" ] 
+then
+    if [ -z "$SNIC_TMP" ]
+    then
+	export TMP=/tmp
+    else
+	export TMP=$SNIC_TMP
+    fi
+fi
+log "TMP: $TMP" "main"
+
+# MOSAIK settings
 
 if [ -z "$MOSAIKBIN" ]
 then
@@ -110,84 +174,49 @@ then
 	MOSAIKBIN=/home/daniel/src/mosaik-aligner-read-only/bin
     fi
 fi
-
-if [ -z "$ANNOVARBIN" ]
-then
-    ANNOVARBIN=/home/daniel/src/annovar
-fi
-
-if [ -z "$SAMTOOLS" ]
-then 
-    SAMTOOLS=/home/daniel/src/samtools-0.1.17/samtools
-fi
-
-if [ -z "$BCFTOOLS" ]
-then 
-    BCFTOOLS=/home/daniel/src/samtools-0.1.17/bcftools/bcftools
-fi
-
-if [ -z "$VCFUTILS" ]
-then
-    VCFUTILS=/home/daniel/src/samtools-0.1.17/bcftools/vcfutils.pl
-fi
-
-if [ -z "$FASTQC" ]
-then 
-    FASTQC=/home/daniel/src/FastQC/fastqc
-fi
-
-if [ -z "$AVDBDIR" ]
-then
-    AVDBDIR=/home/daniel/src/annovar/humandb/
-fi
-
-if [ -z "$TMP" ] 
-then
-    if [ -z "$SNIC_TMP" ]
-    then
-	export TMP=/tmp
-    else
-	export TMP=$SNIC_TMP
-    fi
-fi
-
-# MOSAIK settings
+log "MOSAIKBIN: $MOSAIKBIN" "main"
 
 if [ -z "$MOSAIK_mismatches" ]
 then 
     MOSAIK_mismatches=14
-fi 
+fi
+log "MOSAIK - mismatches: $MOSAIK_mismatches" "main"
 
-if [ -z "$sw_bandwidth" ]
+if [ -z "$MOSAIK_sw_bandwidth" ]
 then
     MOSAIK_sw_bandwidth=33
 fi
+log "MOSAIK - SW bandwidth: $MOSAIK_sw_bandwidth" "main"
 
-if [ -z "$clustersize" ]
+if [ -z "$MOSAIK_clustersize" ]
 then
     MOSAIK_clustersize=35
 fi
-
+log "MOSAIK - clustersize: $MOSAIK_clustersize" "main"
 
 if [ -z "$MOSAIK_JUMP" ]
 then
     MOSAIK_JUMP="yes"
 fi
+log "MOSAIK - JUMP: $MOSAIK_JUMP" "main"
 
 if [ -z "$MOSAIK_mjump" ]
 then 
     MOSAIK_mjump=15
 fi
+log "MOSAIK - mjump: $MOSAIK_mjump" "main"
 
 if [ -z $MOSAIK_mhp ]
 then
     MOSAIK_mhp=100
 fi
+log "MOSAIK - mhp: $MOSAIK_mhp" "main"
 
 if [ -z "$MOSAIK_TMP" ]
 then 
     export MOSAIK_TMP=$TMP
 fi 
+log "MOSAIK - MOSAIK_TMP: $MOSAIK_TMP" "main"
 
 if [ -z "$MOSAIK_CORES" ]
 then
@@ -198,6 +227,7 @@ then
 	MOSAIK_CORES=$NPROC
     fi
 fi
+log "MOSAIK - MOSAIK_CORES: $MOSAIK_CORES" "main"
 
 # VCFTOOLS
 
@@ -205,20 +235,22 @@ if [ -z "$VCFUTILS_min_call_cov" ]
 then
     VCFUTILS_min_call_cov=6
 fi
+log "VCFUTILS - min_call_cov $VCFUTILS_min_call_cov" "main"
 
 if [ -z "$VCFUTILS_max_call_cov" ] 
 then
     VCFUTILS_max_call_cov=400
 fi
+log "VCFUTILS - min_call_cov $VCFUTILS_max_call_cov" "main"
 
 VCFUTILS_var_filter_settings="-D${VCFUTILS_max_call_cov} -d${VCFUTILS_min_call_cov}"
 
-PIPELINE=etiologica
-PIPELINEFUNK=$BINDIR/pipelinefunk.sh
+#log() all settings!
+cd $BINDIR; 
+pipeline_git_status=`git show --pretty=format:"%h %ci %s"; git status --porcelain`
+cd -
 
-. $PIPELINEFUNK
-
-# log() all settings!
+log "pipeline git status: $pipeline_git_status" "main"
 
 ### end environment variable processing
 
@@ -249,7 +281,7 @@ if [ "" != "`ls -1 | grep fastq.gz`" ]
 then
     for patientfastq in *fastq.gz
     do
-	if [ "$patientfastq" != "$REFERENCE" ]	
+	if [ "$patientfastq" != "$REFERENCE" ]
 	then 
 	    # ok with links to fastq.gz?
 	    mv $patientfastq patient/
@@ -276,6 +308,7 @@ do
 
 	if workLockOk $patientfastqc_zip
 	then
+	    log "Locked $patient_fastqc_zip for FastQC." "main"
 	    runme="$FASTQC $patientfastq"
 	    vanillaRun "$runme" "$patientfastqc_zip" "result" "FastQC"
 
@@ -297,8 +330,7 @@ POD_MATE
 
 # single reads or mates?
 if [ -z "$MATEPAIRS" ] 
-then 
-    
+then
     MATEPAIRS=1
     for patient_fastq_gz in patient/*_1.fastq.gz 
     do
@@ -306,7 +338,7 @@ then
 	if [ ! -s $possible_mate ] 
 	then
 	    # possible mate according to convention not found.
-	    echo "Did not find any ($possible) mate for $patient_fasta_gz. Assuming all reads are unpaired."
+	    echo "Did not find any ($possible_mate) mate for $patient_fasta_gz. Assuming all reads are unpaired."
 
 	    MATEPAIRS=0
 	fi
@@ -318,7 +350,7 @@ then
 	if [ ! -s $possible_mate ] 
 	then
 	    # possible mate according to convention not found.
-	    echo "Did not find any ($possible) mate for $patient_fasta_gz. Assuming all reads are unpaired."
+	    echo "Did not find any ($possible_mate) mate for $patient_fasta_gz. Assuming all reads are unpaired."
 
 	    MATEPAIRS=0
 	fi
@@ -343,8 +375,17 @@ do
 
     if workLockOk $patient_fastq_gz
     then
-	patient_dat=${patient_fastq_gz%%fastq.gz}dat
+	log "Locked $patient_fastq_gz for alignment, variant calling and annotation." "main"
 
+#	patient_trim_fastq_gz=${patient_fastq_gz%%fastq.gz}trim.fastq.gz
+#	if needsUpdate $patient_trim_fastq_gz $patient_fastq_gz $BINDIR/trim.pl
+#	then
+#	    runme="zcat $patient_fastq_gz | $BINDIR/trim.pl|$PGZIP -c > $patient_trim_fastq_gz"
+#	    vanillaRun "$runme" "$patient_trim_fastq_gz" "temp" "Trim read ends"
+#	fi
+	# trim
+
+	patient_dat=${patient_fastq_gz%%fastq.gz}dat
 	if [ "$MATEPAIRS" == "0" ]
 	then
 	    if needsUpdate $patient_dat $patient_fastq_gz
@@ -439,36 +480,25 @@ POD_MOSAIKDUP
 
 	patient_vcf=${patient_bcf%%raw.bcf}flt.vcf
 	if needsUpdate $patient_vcf $patient_bcf $BCFTOOLS $VCFUTILS
-	then
-	    
-	    if [ -z "$var_filter_settings" ]
-	    then
-		var_filter_settings="-D1000 -d6"
-	    fi
+	then	    
 	    runme="$BCFTOOLS view $patient_bcf | $VCFUTILS varFilter $VCFUTILS_var_filter_settings > $patient_vcf"
-	    # -D200? 
 	    vanillaRun "$runme" "$patient_vcf" "result" "bcftools view |vcfutils varFilter"
 	fi
 	
-	patient_q20_vcf=${patient_vcf%%vcf}q20.vcf
-	if needsUpdate $patient_q20_vcf $patient_vcf
+	patient_pass_vcf=${patient_vcf%%vcf}pass.vcf
+	if needsUpdate $patient_pass_vcf $patient_vcf
 	then
-	    # generic baq-filter
-	    runme="awk '($6>=20) { print; }' < $patient_vcf > $patient_q20_vcf"
-	    vanillaRun "$runme" "$patient_q20_vcf" "result" "Filter VCF to q20."
-	fi
-
-	patient_q20_avlist=${patient_q20_vcf%%vcf}avlist
-	if needsUpdate $patient_q20_avlist $patient_q20_vcf $ANNOVARBIN/convert2annovar.pl
-	then
-	    runme="$ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_q20_vcf > $patient_q20_avlist"
-	    vanillaRun "$runme" "$patient_q20_avlist" "result" "convert2annovar q20"
+	    # generic baq-filter : NB need to avoid $6 being evaluated already att passing... PASS only?
+	    # note: mpileup does not give PASS, only UnifiedGenotyper.. Go GATK.
+	    runme="awk '(\$6>=20) { print; }' < $patient_vcf > $patient_pass_vcf"
+#	    runme="awk '(\$7==\"PASS\") { print; }' < $patient_vcf > $patient_pass_vcf"
+	    vanillaRun "$runme" "$patient_pass_vcf" "result" "Filter VCF to pass."
 	fi
 	
 	patient_avlist=${patient_vcf%%vcf}avlist
 	if needsUpdate $patient_avlist $patient_vcf $ANNOVARBIN/convert2annovar.pl
 	then
-	    runme="$ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_vcf > $patient_avlist"
+	    runme="$ANNOVARBIN/convert2annovar.pl -allallele -format vcf4 $patient_vcf > $patient_avlist"
 	    vanillaRun "$runme" "$patient_avlist" "result" "convert2annovar"
 	fi
 
@@ -477,12 +507,46 @@ POD_MOSAIKDUP
 	then
 	    runme="$ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_avlist $AVDBDIR"
 	    vanillaRun "$runme" "$patient_exonic_variant" "result" "ANNOVAR --geneanno"
-	    
+	fi
+
+	patient_pass_avlist=${patient_pass_vcf%%vcf}avlist
+	if needsUpdate $patient_pass_avlist $patient_pass_vcf $ANNOVARBIN/convert2annovar.pl
+	then
+	    runme="$ANNOVARBIN/convert2annovar.pl -allallele -format vcf4 $patient_pass_vcf > $patient_pass_avlist"
+	    vanillaRun "$runme" "$patient_pass_avlist" "result" "convert2annovar pass"
+	fi
+
+	patient_exonic_variant=${patient_pass_avlist}.exonic_variant_function
+	if needsUpdate $patient_exonic_variant $patient_pass_avlist $ANNOVARBIN/annotate_variation.pl
+	then
+	    runme="$ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_pass_avlist $AVDBDIR"
+	    vanillaRun "$runme" "$patient_exonic_variant" "result" "ANNOVAR --geneanno"
+	fi
+
+	patient_maf_filter=${patient_pass_avlist}.hg19_ALL.sites.2010_11_filtered
+	if needsUpdate $patient_maf_filter $patient_pass_avlist $ANNOVARBIN/annotate_variation.pl
+	then
+	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype 1000g2010nov_all --maf_threshold $ANNOVAR_1KG_MAF --buildver hg19 $patient_pass_avlist $AVDBDIR"
+	    vanillaRun "$runme" "$patient_maf_filter" "result" "ANNOVAR --filter 1000g maf $ANNOVAR_1KG_MAF"
+	fi
+
+	patient_maf_exonic_variant=${patient_maf_filter}.exonic_variant_function
+	if needsUpdate $patient_maf_exonic_variant $patient_maf_filter $ANNOVARBIN/annotate_variation.pl
+	then
+	    runme="$ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_maf_filter $AVDBDIR"
+	    vanillaRun "$runme" "$patient_maf_exonic_variant" "result" "ANNOVAR 1000g MAF $ANNOVAR_1KG_MAF --geneanno"
+	fi
+
+#	patient_sift_filter=${patient_maf_filter}.hg19_ALL.sites.2010_11_filtered
+#	if needsUpdate $patient_sift_filter $patient_avlistOA $ANNOVARBIN/annotate_variation.pl
+#	then
+#	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype avsift --buildver hg19 $patient_maf_filter $AVDBDIR"
+#	    vanillaRun "$runme" "$patient_maf_filter" "result" "ANNOVAR --filter 1000g maf $ANNOVAR_1KG_MAF"
+#	fi
 #	    $ANNOVARBIN/annotate_variation.pl --regionanno --buildver hg19 --dbtype dgv $patient_avlist $AVDBDIR
 #	    export PATH=$PATH:"$ANNOVARBIN"
 #	    $ANNOVARBIN/summarize_annovar.pl --buildver hg19 --verdbsnp 132 --outfile ${patient_fastq_gz%%.fastq.gz} $patient_avlist $AVDBDIR 
 #	    registerFile other_annovar_files temp
-	fi
 
 	releaseLock $patient_fastq_gz
     fi
