@@ -313,6 +313,7 @@ do
 	    vanillaRun "$runme" "$patientfastqc_zip" "result" "FastQC"
 
 	    releaseLock $patientfastqc_zip
+	    log "Workblock exit: released $patient_fastqc_zip lock for FastQC." "main"
 	fi
     fi
 done
@@ -548,7 +549,16 @@ POD_MOSAIKDUP
 #	    $ANNOVARBIN/summarize_annovar.pl --buildver hg19 --verdbsnp 132 --outfile ${patient_fastq_gz%%.fastq.gz} $patient_avlist $AVDBDIR 
 #	    registerFile other_annovar_files temp
 
+# gather exonic;splicing from variant_function
+# gather indel from exonic_variant_function
+# gather nonsynonymous -> sift & polyphen2 -> keep.
+
+# log hom. for gene, if more than one het, log compound
+
+# cnv analysis
+	
 	releaseLock $patient_fastq_gz
+	log "Workblock exit: released lock on $patient_fastq_gz." "main"
     fi
 done
 
