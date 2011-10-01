@@ -13,15 +13,6 @@ module load mosaik-aligner/1.1.0021
 mosaik_aligner=`which MosaikAligner`
 export MOSAIKBIN=`dirname $mosaik_aligner`
 
-export BINDIR=$HOME/sandbox/etiologica/bin
-
-export ANNOVARBIN=$HOME/src/annovar
-export SAMTOOLS=$HOME/src/samtools-0.1.17/samtools
-export BCFTOOLS=$HOME/src/samtools-0.1.17/bcftools/bcftools
-export VCFUTILS=$HOME/src/samtools-0.1.17/bcftools/vcfutils.pl
-export FASTQC=$HOME/src/FastQC/fastqc
-export AVDBDIR=/bubo/nobackup/uppnex/annotations/annovar/humandb/
-
 export REFERENCE=human_g1k_v37.fasta.gz
 
 export mismatches=14
@@ -35,7 +26,24 @@ export MOSAIK_TMP=$SNIC_TMP
 export TMP=$SNIC_TMP
 export TEMP=$SNIC_TMP
 
-cd /proj/b2011097/private/chr9q
+export MOSAIK_DAT_ON_SCRATCH=no
+#MOSIK_DAT_ON_SCRATCH=yes
+
+export BINDIR=$HOME/sandbox/etiologica/bin
+
+export ANNOVARBIN=$HOME/src/annovar
+export ANNOVAR_DISPENSABLE=$HOME/src/annovar/example/dispensable.all
+export ANNOVAR_1KG_MAF=0.1
+export ANNOVAR_1KG_MAF=0.1
+export ANNOVAR_PP2_BENIGN=0.85
+export AVDBDIR=/bubo/nobackup/uppnex/annotations/annovar/humandb/
+
+export SAMTOOLS=$HOME/src/samtools-0.1.17/samtools
+export BCFTOOLS=$HOME/src/samtools-0.1.17/bcftools/bcftools
+export VCFUTILS=$HOME/src/samtools-0.1.17/bcftools/vcfutils.pl
+export FASTQC=$HOME/src/FastQC/fastqc
+
+#cd /proj/b2011097/private/chr9q
 
 # first pass..
 #for file in *fastq ; 
