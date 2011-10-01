@@ -183,3 +183,32 @@ awk '($6>=20) { print; }' < var.flt.vcf > SRR029011.var.flt.q20.vcf
 
 # reading logs with plenty of carriage return and escape code coloring material (Mosaik)
 sed -e's/\r//g; s/\x1B//g; s/\[1;[0-9][0-9]m//g; s/\[0m//;' slurm-1410474.out |grep -v reads\/s 
+
+# filter annovar output according to a dominant / compound het model
+awk '($1 == "exonic;splicing" || $1 == "splicing") { print }' 6_110825_AD035WACXX_927_ind_12_1.var.flt.pass.avlist.hg19_ALL.sites.2010_11_filtered.variant_function >6_110825_AD035WACXX_927_ind_12_1.var.flt.pass.avlist.hg19_ALL.sites.2010_11_filtered.variant_function.splicing
+
+cut -f2- 6_110825_AD035WACXX_927_ind_12_1.var.flt.pass.avlist.hg19_ALL.sites.2010_11_filtered.exonic_variant_function | awk '($1 != "synonymous") { print }'  >6_110825_AD035WACXX_927_ind_12_1.var.flt.pass.avlist.hg19_ALL.sites.2010_11_filtered.exonic_variant_function.not_syn
+
+cat 6_110825_AD035WACXX_927_ind_12_1.var.flt.pass.avlist.hg19_ALL.sites.2010_11_filtered.variant_function.splicing 6_110825_AD035WACXX_927_ind_12_1.var.flt.pass.avlist.hg19_ALL.sites.2010_11_filtered.exonic_variant_function.not_syn |perl -e'while(<STDIN>) { chomp; @r=split(/\t/); @transcripts=split(/[:;(]+/,$r[1]); $gene=$transcripts[0]; $gene_row=$gene."\t".join("\t",@r)."\n"; $nvars{$gene}++; $vars{$gene}.=$gene_row; if(($r[7] eq "hom") || ($r[7] eq "het" && $nvars{$gene} >1) ) { $modelok{$gene}=1; } } foreach $gene (keys %modelok) {print $vars{$gene}};'
+
+for file in *pass*hg19_ALL*.variant_function; do awk '($1 == "exonic;splicing" || $1 == "splicing") { print }' $file > $file.splicing ; done
+for file in *pass*hg19_ALL*.exonic_variant_function; do cut -f2- $file | awk '($1 != "synonymous") { print }' > $file.not_syn  ; done
+for file in *pass*hg19_ALL*.variant_function; do cat ${file%%variant_function}exonic_variant_function.not_syn $file.splicing |perl -e'while(<STDIN>) { chomp; @r=split(/\t/); @transcripts=split(/[:;(]+/,$r[1]); $gene=$transcripts[0]; $gene_row=$gene."\t".join("\t",@r)."\n"; $nvars{$gene}++; $vars{$gene}.=$gene_row; if(($r[7] eq "hom") || ($r[7] eq "het" && $nvars{$gene} >1) ) { $modelok{$gene}=1; } } foreach $gene (keys %modelok) {print $vars{$gene}};' > $file.hom_poss_comp_het ; done
+for file in *hom_poss_comp_het; do cut -f 1 $file|uniq > $file.genelist; done
+
+#also bl exst, do dito, plus
+cat *genelist|sort|uniq -c|awk '($1 >3) {print $2}'> genes_in_common_to_four_or_more_bladder_exstrophy_patients
+cat *genelist|sort|uniq -c|awk '($1 >1) {print $2}'> genes_in_common_to_two_or_more_bladder_exstrophy_patients
+
+# back again
+for file in *genelist; do grep -v -w -f ~/bladder_exstrophy/private/first_batch/patient/genes_in_common_to_four_or_more_bladder_exstrophy_patients $file > $file.uncommon ; done
+cat *uncommon |sort |uniq -c |awk '($1>3) {print $2}' >uncommon_found_in_four
+for file in *hom_poss_comp_het ; do grep -w -f uncommon_found_in_four $file > $file.not_in_four_be.found_in_four_hlh; done
+
+for file in *genelist; do grep -v -w -f ~/bladder_exstrophy/private/first_batch/patient/genes_in_common_to_two_or_more_bladder_exstrophy_patients $file > $file.pretty_rare; done
+for file in *hom_poss_comp_het ; do grep -w -f pretty_rare_found_in_four $file > $file.not_in_two_be.found_in_four_hlh; done
+
+# tempclean
+for sample in `ls *vcf| cut -f1 -d.|uniq` ; do rm -rf ${sample}_DupData $sample.mosaik.sorted.dat $sample.dat ; done
+
+#segdup, dispensable.. the bl_exs does give a sort of dispensable, but is crude (having nonsyn snv, ie being variable, is not neccessarily a good sign of being dispensable).
