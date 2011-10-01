@@ -445,7 +445,8 @@ multiple workers to co-exist on the same directory. Lock eg raw file
 before entering a work segment. Carefully choose the file to lock to
 atomically lock all downstream work intended. This avoids both
 deadlocks and having another worker start a downstream segment on soon
-to be outdated previous results.  
+to be outdated previous results. Somewhat arbitrarily requires that file
+exists before locking.
 
 =cut
 
@@ -460,14 +461,15 @@ function workLockOk()
 
     if [ -a "$file" ]
     then
-	if ( set -o noclobber; echo "$idstring" > "$lockfile") 2> /dev/null;
+	if ( set -o noclobber; echo "$idstring" > "$lockfile" ) 2> /dev/null;
 	then
 	    trap 'rm -f "$lockfile"; exit $?' INT TERM EXIT
 	    return 0;
 	else 
 	    return 1;
 	fi
-
+    else
+	return 1;
     fi
 }
 
