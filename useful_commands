@@ -212,3 +212,15 @@ for file in *hom_poss_comp_het ; do grep -w -f pretty_rare_found_in_four $file >
 for sample in `ls *vcf| cut -f1 -d.|uniq` ; do rm -rf ${sample}_DupData $sample.mosaik.sorted.dat $sample.dat ; done
 
 #segdup, dispensable.. the bl_exs does give a sort of dispensable, but is crude (having nonsyn snv, ie being variable, is not neccessarily a good sign of being dispensable).
+
+#-----
+
+# breakdancer
+
+/home/daniel/src/bwa-0.5.8a/bwa aln /home/daniel/src/freec-111005/hg19/chromosomes/human_g1k_v37.fasta Sample_1_3_1.fastq.gz > Sample_1_3_1.sai
+/home/daniel/src/bwa-0.5.8a/bwa aln /home/daniel/src/freec-111005/hg19/chromosomes/human_g1k_v37.fasta Sample_1_3_2.fastq.gz > Sample_1_3_2.sai
+/home/daniel/src/bwa-0.5.8a/bwa sampe /home/daniel/src/freec-111005/hg19/chromosomes/human_g1k_v37.fasta Sample_1_3_1.sai Sample_1_3_2.sai Sample_1_3_1.fastq.gz Sample_1_3_2.fastq.gz > Sample_1_3.sam
+samtools view -bS Sample_1_3.sam -o Sample_1_3.bwa.bam
+samtools sort Sample_1_3.bwa.bam Sample_1_3.bwa.sorted
+/home/daniel/src/breakdancer/perl/bam2cfg.pl Sample_1_3.bwa.sorted.bam > Sample_1_3.bwa.breakdancer.cfg
+/home/daniel/src/breakdancer-1.1_2011_02_21/cpp/breakdancer_max -h -g Sample_1_3.bwa.breakdancer.bed Sample_1_3.bwa.breakdancer.cfg > Sample_1_3.breakdancer.out
