@@ -411,7 +411,7 @@ do
 	    mkdir -p $MOSAIK_TMP/`dirname $patient_dat`
 	    patient_dat=$MOSAIK_TMP/$patient_dat
 
-	    final_patient_bam=${patient_dat%%dat}.mosaik.bam
+	    final_patient_bam=${patient_dat%%dat}mosaik.bam
 	    if needsUpdate ${final_patient_bam} ${patient_fastq_gz} $MOSAIKBIN/MosaikBuild $MOSAIKBIN/MosaikAligner $MOSAIKBIN/MosaikText $reference_jump $MOSAIKBIN/MosaikDupSnoop $MOSAIKBIN/MosaikSort
 	    then
 		run_align="yes"
@@ -507,7 +507,7 @@ POD_MOSAIKDUP
 
 	    if [ $MOSAIK_DAT_ON_SCRATCH == "yes" ] 
 	    then
-		patient_bam=${patient_bam##$MOSAIK_TMP}
+		patient_bam=${patient_bam##${MOSAIK_TMP}/}
 	    fi
 
 	    if needsUpdate ${patient_bam} ${patient_sorted} $MOSAIKBIN/MosaikText
@@ -586,7 +586,7 @@ POD_MOSAIKDUP
 	patient_pp2_filter=${patient_maf_filter}.hg19_ljb_pp2_filtered
 	if needsUpdate $patient_pp2_filter $patient_maf_filter $ANNOVARBIN/annotate_variation.pl
 	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype ljb_pp2 --reverse --score_threshold $ANNOVAR_PP2_BENIGN --buildver hg19 $patient_pass_avlist $AVDBDIR"
+	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype ljb_pp2 --reverse --score_threshold $ANNOVAR_PP2_BENIGN --buildver hg19 $patient_maf_filter $AVDBDIR"
 	    vanillaRun "$runme" "$patient_pp2_filter" "result" "ANNOVAR --filter PolyPhen2 benign level $ANNOVAR_PP2_BENIGN"
 	fi
 
@@ -617,7 +617,7 @@ POD_MOSAIKDUP
 	patient_not_syn=${patient_pp2_exonic_variant}.not_syn
 	if needsUpdate $patient_not_syn $patient_pp2_exonic_variant
 	then
-	    runme="cut -f2- $patient_pp2_exonic_variant | awk '(\$1 \!= \"synonymous\") { print }' > $patient_not_syn"
+	    runme="cut -f2- $patient_pp2_exonic_variant | awk '(\$1 != \"synonymous\") { print }' > $patient_not_syn"
 	    vanillaRun "$runme" "$patient_not_syn" "result" "Ignore synonymous variants for now."
 	fi
 
@@ -625,13 +625,15 @@ POD_MOSAIKDUP
 	patient_recessive_genelist=${patient_pp2_variant_function}.recessive_model
 	if needsUpdate $patient_recessive_genelist $patient_not_syn $patient_splicing
 	then
-	    cat ${patient_not_syn} $patient_splicing |perl -e'while(<STDIN>) { chomp; @r=split(/\t/); @transcripts=split(/[:;(]+/,$r[1]); $gene=$transcripts[0]; $gene_row=$gene."\t".join("\t",@r)."\n"; $nvars{$gene}++; $vars{$gene}.=$gene_row; if(($r[7] eq "hom") || ($r[7] eq "het" && $nvars{$gene} >1) ) { $modelok{$gene}=1; } } foreach $gene (keys %modelok) {print $vars{$gene}};' > $patient_recessive_genelist 
+	   runme="cat ${patient_not_syn} $patient_splicing |perl -e 'while(<STDIN>) { chomp; @r=split(/\t/); @transcripts=split(/[:;(]+/,\$r[1]); \$gene=$transcripts[0]; \$gene_row=\$gene.\"\t\".join(\"\t\",@r).\"\n\"; $nvars{\$gene}++; \$vars{\$gene}.=$gene_row; if((\$r[7] eq \"hom\") || (\$r[7] eq \"het\" && \$nvars{\$gene} >1) ) { $modelok{\$gene}=1; } } foreach \$gene (keys %modelok) {print \$vars{\$gene}};' > $patient_recessive_genelist" 
+	   vanillaRun "$runme" "$patient_recessive_genelist" "result" "Produce recessive model gene list"
 	fi
 
 	patient_indisp=${patient_recessive_genelist}.indisp
 	if needsUpdate $patient_indisp $patient_recessive_genelist
 	then
 	  runme="grep -v -w -f $ANNOVAR_DISPENSABLE $patient_recessive_genelist > $patient_indisp"
+	  vanillaRun "$runme" "$patient_indisp" "result" "Indispensable genes on recessive gene list."
 	fi
 
 # sift
