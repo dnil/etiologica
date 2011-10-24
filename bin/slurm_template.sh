@@ -26,14 +26,13 @@ export MOSAIK_TMP=$SNIC_TMP
 export TMP=$SNIC_TMP
 export TEMP=$SNIC_TMP
 
-export MOSAIK_DAT_ON_SCRATCH=no
+export MOSAIK_DAT_ON_SCRATCH="yes"
 #MOSIK_DAT_ON_SCRATCH=yes
 
 export BINDIR=$HOME/sandbox/etiologica/bin
 
 export ANNOVARBIN=$HOME/src/annovar
 export ANNOVAR_DISPENSABLE=$HOME/src/annovar/example/dispensable.all
-export ANNOVAR_1KG_MAF=0.1
 export ANNOVAR_1KG_MAF=0.1
 export ANNOVAR_PP2_BENIGN=0.85
 export AVDBDIR=/bubo/nobackup/uppnex/annotations/annovar/humandb/
