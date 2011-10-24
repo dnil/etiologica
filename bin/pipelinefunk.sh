@@ -461,7 +461,7 @@ function workLockOk()
 
     if [ -a "$file" ]
     then
-	if ( set -o noclobber; echo "$idstring" > "$lockfile" ) 2> /dev/null;
+	if ( set -o noclobber ; echo "$idstring" > "$lockfile" ) 2> /dev/null;
 	then
 	    trap 'rm -f "$lockfile"; exit $?' INT TERM EXIT
 	    return 0;
