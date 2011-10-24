@@ -163,7 +163,7 @@ do
 	then
 	    # generic baq-filter : NB need to avoid $6 being evaluated already att passing... PASS only?
 	    # note: mpileup does not give PASS, only UnifiedGenotyper.. Go GATK.
-	    runme="awk '(\$6>=20) { print; }' < $patient_vcf > $patient_pass_vcf"
+	    runme="awk '(\$6>=30) { print; }' < $patient_vcf > $patient_pass_vcf"
 #	    runme="awk '(\$7==\"PASS\") { print; }' < $patient_vcf > $patient_pass_vcf"
 	    vanillaRun "$runme" "$patient_pass_vcf" "result" "Filter VCF to pass."
 	fi
@@ -196,6 +196,15 @@ do
 	    vanillaRun "$runme" "$patient_exonic_variant" "result" "ANNOVAR --geneanno"
 	fi
 
+        # gather exonic;splicing from variant_function
+	patient_all_variant_function=${patient_pass_avlist}.variant_function
+	patient_all_splicing=${patient_all_variant_function}.splicing
+	if needsUpdate $patient_all_splicing $patient_all_variant_function
+	then
+	    runme="awk '(\$1 == \"exonic;splicing\" || \$1 == \"splicing\") { print }' $patient_all_variant_function > $patient_all_splicing"
+	    vanillaRun "$runme" "$patient_all_splicing" "result" "Extract passed splicing variants."
+	fi
+
 	patient_maf_filter=${patient_pass_avlist}.hg19_ALL.sites.2010_11_filtered
 	if needsUpdate $patient_maf_filter $patient_pass_avlist $ANNOVARBIN/annotate_variation.pl
 	then
@@ -206,14 +215,14 @@ do
 	patient_maf_exonic_variant=${patient_maf_filter}.exonic_variant_function
 	if needsUpdate $patient_maf_exonic_variant $patient_maf_filter $ANNOVARBIN/annotate_variation.pl
 	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_maf_filter $AVDBDIR"
+	    runme="$ANNOVARBIN/annotate_variation.pl --geneanno --buildver hg19 $patient_maf_filter $AVDBDIR"
 	    vanillaRun "$runme" "$patient_maf_exonic_variant" "result" "ANNOVAR 1000g MAF $ANNOVAR_1KG_MAF --geneanno"
 	fi
 
 	patient_pp2_filter=${patient_maf_filter}.hg19_ljb_pp2_filtered
 	if needsUpdate $patient_pp2_filter $patient_maf_filter $ANNOVARBIN/annotate_variation.pl
 	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype ljb_pp2 --reverse --score_threshold $ANNOVAR_PP2_BENIGN --buildver hg19 $patient_pass_avlist $AVDBDIR"
+	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype ljb_pp2 --reverse --score_threshold $ANNOVAR_PP2_BENIGN --buildver hg19 $patient_maf_filter $AVDBDIR"
 	    vanillaRun "$runme" "$patient_pp2_filter" "result" "ANNOVAR --filter PolyPhen2 benign level $ANNOVAR_PP2_BENIGN"
 	fi
 
@@ -225,43 +234,67 @@ do
 	fi
 	
 	patient_pp2_variant_function=${patient_pp2_filter}.variant_function
-	patient_splicing=${patient_pp2_variant_function}.splicing
-	if needsUpdate $patient_splicing $patient_pp2_variant_function
+	patient_pp2_splicing=${patient_pp2_variant_function}.splicing
+	if needsUpdate $patient_pp2_splicing $patient_pp2_variant_function
 	then
-	    runme="awk '(\$1 == \"exonic;splicing\" || \$1 == \"splicing\") { print }' $patient_pp2_variant_function > $patient_splicing"
-	    vanillaRun "$runme" "$patient_splicing" "result" "Extract splicing variants."
-	fi	    
-
-        # gather exonic;splicing from variant_function
-	patient_all_variant_function=${patient_pass_avlist}.variant_function
-	patient_all_splicing=${patient_all_variant_function}.splicing
-	if needsUpdate $patient_all_splicing $patient_all_variant_function
-	then
-	    runme="awk '(\$1 == \"exonic;splicing\" || \$1 == \"splicing\") { print }' $patient_all_variant_function > $patient_all_splicing"
-	    vanillaRun "$runme" "$patient_all_splicing" "result" "Extract passed splicing variants."
+	    runme="awk '(\$1 == \"exonic;splicing\" || \$1 == \"splicing\") { print }' $patient_pp2_variant_function > $patient_pp2_splicing"
+	    vanillaRun "$runme" "$patient_pp2_splicing" "result" "Extract splicing variants."
 	fi
-
+        
 	patient_not_syn=${patient_pp2_exonic_variant}.not_syn
 	if needsUpdate $patient_not_syn $patient_pp2_exonic_variant
 	then
-	    runme="cut -f2- $patient_pp2_exonic_variant | awk '(\$1 \!= \"synonymous\") { print }' > $patient_not_syn"
+	    runme="cut -f2- $patient_pp2_exonic_variant | awk '(\$1 != \"synonymous\") { print }' > $patient_not_syn"
 	    vanillaRun "$runme" "$patient_not_syn" "result" "Ignore synonymous variants for now."
 	fi
 
+	patient_pp2_splicing_indisp=${patient_pp2_splicing}.indisp
+	if needsUpdate $patient_pp2_splicing_indisp $patient_pp2_splicing $ANNOVAR_DISPENSABLE
+	then
+	  runme="grep -v -w -f $ANNOVAR_DISPENSABLE $patient_pp2_splicing > $patient_pp2_splicing_indisp"
+	  vanillaRun "$runme" "$patient_pp2_splicing_indisp" "result" "Filter splicing variants in dispensable genes."
+	fi
+
+	patient_not_syn_indisp=${patient_not_syn}.indisp
+	if needsUpdate $patient_not_syn_indisp $patient_not_syn $ANNOVAR_DISPENSABLE
+	then
+	  runme="grep -v -w -f $ANNOVAR_DISPENSABLE $patient_not_syn > $patient_not_syn_indisp"
+	  vanillaRun "$runme" "$patient_not_syn_indisp" "result" "Filter variants in dispensable genes."
+	fi
+	
 	# hom | 2xhet (remember splicing!)	
-	patient_recessive_genelist=${patient_pp2_variant_function}.recessive_model
-	if needsUpdate $patient_recessive_genelist $patient_not_syn $patient_splicing
+	patient_recessive_variant_list=${patient_pp2_variant_function}.indisp.recessive_model
+	if needsUpdate $patient_recessive_variant_list $patient_not_syn_indisp $patient_pp2_splicing_indisp
 	then
-	    cat ${patient_not_syn} $patient_splicing |perl -e'while(<STDIN>) { chomp; @r=split(/\t/); @transcripts=split(/[:;(]+/,$r[1]); $gene=$transcripts[0]; $gene_row=$gene."\t".join("\t",@r)."\n"; $nvars{$gene}++; $vars{$gene}.=$gene_row; if(($r[7] eq "hom") || ($r[7] eq "het" && $nvars{$gene} >1) ) { $modelok{$gene}=1; } } foreach $gene (keys %modelok) {print $vars{$gene}};' > $patient_recessive_genelist 
+	   runme="cat ${patient_not_syn_indisp} $patient_pp2_splicing_indisp |perl -e 'while(<STDIN>) { chomp; @r=split(/\t+/); @transcripts=split(/[:;(]+/,\$r[1]); \$gene=\$transcripts[0]; \$gene=~s/\)//; \$gene_row=\$gene.\"\t\".join(\"\t\",@r).\"\n\"; \$nvars{\$gene}++; \$vars{\$gene}.=\$gene_row; if((\$r[7] eq \"hom\") || (\$r[7] eq \"het\" && \$nvars{\$gene} >1) ) { \$modelok{\$gene}=1; } } foreach \$gene (keys %modelok) {print \$vars{\$gene}};' > $patient_recessive_variant_list" 
+	   vanillaRun "$runme" "$patient_recessive_variant_list" "result" "Produce recessive model variant list"
+	fi
+	
+	# cut recessive model output to avlist
+	patient_recessive_avlist=${patient_recessive_variant_list}.avlist
+	if needsUpdate $patient_recessive_avlist $patient_recessive_variant_list
+	then
+	    runme="perl -ne 'chomp; @r=split(/\t+/); print join(\"\t\",@r[3..10], @r[0..2]),\"\n\";' $patient_recessive_variant_list > $patient_recessive_avlist"
+	    vanillaRun "$runme" "$patient_recessive_avlist" "temp" "Produce recessive model avlist"
 	fi
 
-	patient_indisp=${patient_recessive_genelist}.indisp
-	if needsUpdate $patient_indisp $patient_recessive_genelist
+	# filter against dbSNP - will retain for most apps; regarded mostly as an rsID annotation step.
+	patient_recessive_dbSNP_filter=${patient_recessive_avlist}.hg19_snp132_filtered
+	if needsUpdate $patient_recessive_dbSNP_filter $patient_recessive_avlist $ANNOVARBIN/annotate_variation.pl
 	then
-	  runme="grep -v -w -f $ANNOVAR_DISPENSABLE $patient_recessive_genelist > $patient_indisp"
+	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype snp132 --buildver hg19 $patient_recessive_avlist $AVDBDIR"
+	    vanillaRun "$runme" "$patient_recessive_dbSNP_filter" "result" "ANNOVAR --filter dbSNP132"
 	fi
 
-        # cnv analysis
+	# filter against dbSNP - will retain for most apps; regarded mostly as an rsID annotation step.
+	patient_dbSNP_filter=${patient_pp2_filter}.hg19_snp132_filtered
+	if needsUpdate $patient_dbSNP_filter $patient_pp2_filter $ANNOVARBIN/annotate_variation.pl
+	then
+	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype snp132 --buildver hg19 $patient_pp2_filter $AVDBDIR"
+	    vanillaRun "$runme" "$patient_dbSNP_filter" "result" "ANNOVAR --filter dbSNP132"
+	fi
+
+        # cnv analysis...
 	
 	releaseLock $patient_vcf
 	log "Workblock exit: released lock on $patient_vcf." "main"
