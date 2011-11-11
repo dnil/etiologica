@@ -625,7 +625,7 @@ POD_MOSAIKDUP
 	patient_recessive_genelist=${patient_pp2_variant_function}.recessive_model
 	if needsUpdate $patient_recessive_genelist $patient_not_syn $patient_splicing
 	then
-	   runme="cat ${patient_not_syn} $patient_splicing |perl -e 'while(<STDIN>) { chomp; @r=split(/\t/); @transcripts=split(/[:;(]+/,\$r[1]); \$gene=$transcripts[0]; \$gene_row=\$gene.\"\t\".join(\"\t\",@r).\"\n\"; $nvars{\$gene}++; \$vars{\$gene}.=$gene_row; if((\$r[7] eq \"hom\") || (\$r[7] eq \"het\" && \$nvars{\$gene} >1) ) { $modelok{\$gene}=1; } } foreach \$gene (keys %modelok) {print \$vars{\$gene}};' > $patient_recessive_genelist" 
+	   runme="cat ${patient_not_syn} $patient_splicing |perl -e 'while(<STDIN>) { chomp; @r=split(/\t/); @transcripts=split(/[:;(]+/,\$r[1]); \$gene=\$transcripts[0]; \$gene_row=\$gene.\"\t\".join(\"\t\",@r).\"\n\"; \$nvars{\$gene}++; \$vars{\$gene}.=\$gene_row; if((\$r[7] eq \"hom\") || (\$r[7] eq \"het\" && \$nvars{\$gene} >1) ) { \$modelok{\$gene}=1; } } foreach \$gene (keys %modelok) {print \$vars{\$gene}};' > $patient_recessive_genelist" 
 	   vanillaRun "$runme" "$patient_recessive_genelist" "result" "Produce recessive model gene list"
 	fi
 
