@@ -71,7 +71,7 @@ POD_ENV
 
 if [ -z "$BINDIR" ]
 then 
-    BINDIR=`basename $my_path`
+    BINDIR=`dirname $my_path`
 fi
 
 PIPELINE=etiologica
