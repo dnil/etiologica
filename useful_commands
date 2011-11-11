@@ -228,3 +228,12 @@ samtools sort Sample_1_3.bwa.bam Sample_1_3.bwa.sorted
 /home/daniel/src/breakdancer/perl/bam2cfg.pl Sample_1_3.bwa.sorted.bam > Sample_1_3.bwa.breakdancer.cfg
 /home/daniel/src/breakdancer-1.1_2011_02_21/cpp/breakdancer_max -h -g Sample_1_3.bwa.breakdancer.bed Sample_1_3.bwa.breakdancer.cfg > Sample_1_3.breakdancer.out
 
+
+#
+
+ ~/src/BEDTools/bin/coverageBed -abam -hist -a Sample_1_11_1.mosaik.bam -b cocaclingen_transcripts.exons.nochr.bed  > Sample_1_11_1.mosaik.bam.cocaclingen_transcripts.exons.coverageBed.hist
+
+~/src/samtools-0.1.17/samtools index Sample_1_19_1.mosaik.bam 
+~/src/samtools-0.1.17/samtools idxstats Sample_1_19_1.mosaik.bam |awk 'BEGIN {sum=0} {sum=sum+$3} END {print sum}'
+
+awk '{OFS="\t"; print $1, $2, $3, $4, $7, $8, $9, $10, $7/$9/24812197}' Sample_1_19_1.mosaik.bam.cocaclingen_transcripts.exons.coverageBed.hist > Sample_1_19_1.mosaik.bam.cocaclingen_transcripts.exons.coverageBed.hist.mappednorm
