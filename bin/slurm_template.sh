@@ -37,9 +37,9 @@ export ANNOVAR_1KG_MAF=0.1
 export ANNOVAR_PP2_BENIGN=0.85
 export AVDBDIR=/bubo/nobackup/uppnex/annotations/annovar/humandb/
 
-export SAMTOOLS=$HOME/src/samtools-0.1.17/samtools
-export BCFTOOLS=$HOME/src/samtools-0.1.17/bcftools/bcftools
-export VCFUTILS=$HOME/src/samtools-0.1.17/bcftools/vcfutils.pl
+export SAMTOOLS=$HOME/src/samtools-0.1.18/samtools
+export BCFTOOLS=$HOME/src/samtools-0.1.18/bcftools/bcftools
+export VCFUTILS=$HOME/src/samtools-0.1.18/bcftools/vcfutils.pl
 export FASTQC=$HOME/src/FastQC/fastqc
 
 #cd /proj/b2011097/private/chr9q
