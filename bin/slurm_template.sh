@@ -35,7 +35,8 @@ export ANNOVARBIN=$HOME/src/annovar
 export ANNOVAR_DISPENSABLE=$HOME/src/annovar/example/dispensable.all
 export ANNOVAR_1KG_MAF=0.1
 export ANNOVAR_PP2_BENIGN=0.85
-export AVDBDIR=/bubo/nobackup/uppnex/annotations/annovar/humandb/
+export AVDBDIR=$HOME/src/annovar/humandb
+#export AVDBDIR=/bubo/nobackup/uppnex/annotations/annovar/humandb/
 
 export SAMTOOLS=$HOME/src/samtools-0.1.18/samtools
 export BCFTOOLS=$HOME/src/samtools-0.1.18/bcftools/bcftools
