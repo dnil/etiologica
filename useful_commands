@@ -237,3 +237,11 @@ samtools sort Sample_1_3.bwa.bam Sample_1_3.bwa.sorted
 ~/src/samtools-0.1.17/samtools idxstats Sample_1_19_1.mosaik.bam |awk 'BEGIN {sum=0} {sum=sum+$3} END {print sum}'
 
 awk '{OFS="\t"; print $1, $2, $3, $4, $7, $8, $9, $10, $7/$9/24812197}' Sample_1_19_1.mosaik.bam.cocaclingen_transcripts.exons.coverageBed.hist > Sample_1_19_1.mosaik.bam.cocaclingen_transcripts.exons.coverageBed.hist.mappednorm
+
+
+# compare samples in target region only
+intersectBed -a Sample_1_13_1.var.flt.pass.vcf -b ../../../INBOX/SureSelect_All_Exon_50mb_with_annotation_hg19_bed_num.bed -wa > Sample_1_13_1.var.flt.pass.in_target.vcf
+grep \# Sample_1_19_1.var.flt.pass.vcf > Sample_1_19_1.var.flt.pass.vcf.header
+grep \# Sample_1_13_1.var.flt.pass.vcf > Sample_1_13_1.var.flt.pass.vcf.header
+for file in *in_target.vcf; do cat ${file%%in_target.vcf}vcf.header $file > ${file%%vcf}with_header.vcf ; bgzip -c ${file%%vcf}with_header.vcf > ${file%%vcf}with_header.vcf.gz ; tabix -p vcf ${file%%vcf}with_header.vcf.gz ; done
+vcf-compare Sample_1_13_1.var.flt.vcf.gz Sample_1_19_1.var.flt.vcf.gz
