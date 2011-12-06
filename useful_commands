@@ -230,6 +230,8 @@ samtools sort Sample_1_3.bwa.bam Sample_1_3.bwa.sorted
 
 
 #
+ ~/src/BEDTools/bin/intersectBed -b trial_genes.bed -a refGenes_exons_hg19_nochr.bed > trial_genes.refGenes.exons.bed
+
 
  ~/src/BEDTools/bin/coverageBed -abam -hist -a Sample_1_11_1.mosaik.bam -b cocaclingen_transcripts.exons.nochr.bed  > Sample_1_11_1.mosaik.bam.cocaclingen_transcripts.exons.coverageBed.hist
 
@@ -237,3 +239,41 @@ samtools sort Sample_1_3.bwa.bam Sample_1_3.bwa.sorted
 ~/src/samtools-0.1.17/samtools idxstats Sample_1_19_1.mosaik.bam |awk 'BEGIN {sum=0} {sum=sum+$3} END {print sum}'
 
 awk '{OFS="\t"; print $1, $2, $3, $4, $7, $8, $9, $10, $7/$9/24812197}' Sample_1_19_1.mosaik.bam.cocaclingen_transcripts.exons.coverageBed.hist > Sample_1_19_1.mosaik.bam.cocaclingen_transcripts.exons.coverageBed.hist.mappednorm
+
+# GATK -rel recal
+
+java -Xmx20g -jar ~/src/GenomeAnalysisTK-1.2-58-gc1329c4/GenomeAnalysisTK.jar -T RealignerTargetCreator -R ~/hs_test/ref/human_g1k_v37.fasta -I Sample_1_13_1.mosaik.bam -o Sample_1_13_1.realigner.intervals
+java -Xmx20g -jar ~/src/GenomeAnalysisTK-1.2-58-gc1329c4/GenomeAnalysisTK.jar -T IndelRealigner -R ~/hs_test/ref/human_g1k_v37.fasta -I Sample_1_13_1.mosaik.bam -targetIntervals Sample_1_13_1.realigner.intervals -o Sample_1_13_1.mosaik.real.bam
+
+java -Xmx20g -jar ~/src/GenomeAnalysisTK-1.2-58-gc1329c4/GenomeAnalysisTK.jar -T DepthOfCoverage -I Sample_1_3_1.mosaik.bam -L cocaclingen_transcripts.exons.nochr.bed --reference_sequence /home/daniel/hs_test/ref/human_g1k_v37.fasta|less
+
+for file in *bam ; do if [ ! -e ${file}.bai ] ; then echo "index $file"; ~/src/samtools-0.1.18/samtools index $file ; fi ; done
+java -Xmx20g -jar /bubo/sw/apps/bioinfo/GATK/1.2.12/GenomeAnalysisTK.jar -T DepthOfCoverage `for file in *bam ; do echo -n \-I $file\ ; done` -L ../../cocaclingen_transcripts.exons.nochr.bed --reference_sequence ../../reference/human_g1k_v37.fasta > icoca.doc.summary
+
+# CallableLoci
+
+# reruns, different Illumina formats
+
+seqret fastq-sanger::1_110929_BB024JACXX_AN1_index1_1.illumina19.fastq fastq-illumina::1_110929_BB024JACXX_AN1_index1_1.illumina13.fastq
+
+# danes...
+
+for file in 200danes_*/patient/*flt.vcf ; do ~/src/tabix-0.2.5/bgzip -c $file > $file.gz ; tabix -p vcf $file.gz; done
+
+~/src/vcftools_0.1.6/perl/vcf-merge 200danes_*/patient/*vcf.gz > 200danes.merged.vcf
+
+grep -v "^#" 200danes.merged.vcf |awk '{ match($8, /SF=([0-9]+,?)+/,sfs); sfsfield=sfs[0]; sfss=split(sfsfield,dummy,",");  print $1, $2, $2+length($4)-1, $4, $5, sfss/200 }'> 200danes.merged.avdb
+
+# reheader bam-files
+
+for file in patient/*.mosaik.bam; do bamfile=`basename $file`; proband=${bamfile%%.mosaik.bam}; ~/src/samtools-0.1.18/samtools view -h $file |head -10000 |grep ^@ |perl -ne 's/SM:unknown/SM:'$proband'/; print;' > $file.resamheader ; done
+
+for file in patient/*.mosaik.bam; do cp $file $file.orig ; done
+
+for file in patient/*mosaik.bam ; do ~/src/samtools-0.1.18/samtools reheader $file.resamheader $file.orig >$file; done
+
+# rm patient/*orig..
+
+# test backtyping..
+ ~/src/samtools-0.1.18/samtools mpileup -l ../../200danes.merged.ypos -ugf ~/hs_test/human_g1k_v37.fasta.gz *bam | ~/src/samtools-
+0.1.18/bcftools/bcftools view -bvcg - > 200danes_a.merged.ypos.backtype.bcf
