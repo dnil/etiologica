@@ -274,6 +274,9 @@ seqret fastq-sanger::1_110929_BB024JACXX_AN1_index1_1.illumina19.fastq fastq-ill
 
 cat tmp.AN1_1 |perl -ne 's/^(@\S+)\s+(\d{1})(\:.+)/$1\/$2/; print' > tmp.rename.AN1_1 
 
+# multiple lanes, low cov per lane - merge
+
+for sample in  `ls -1 *.fastq | cut -d_ -f 4 |sort|uniq` ; do cat `ls *_${sample}*_1.fastq |sort` |pigz -c > ${sample}_1.fastq.gz; cat `ls *_${sample}*_2.fastq |sort` |pigz -c
 
 # danes...
 
