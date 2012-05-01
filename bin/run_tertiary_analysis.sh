@@ -123,6 +123,11 @@ then
 fi
 log "ANNOVAR PP2 BENIGN: $ANNOVAR_PP2_BENIGN" "main"
 
+if [ -z "$ANNOVAR_SPLICING_THRESHOLD" ]
+then
+    ANNOVAR_SPLICING_THRESHOLD=5
+fi
+
 if [ -z "$TMP" ] 
 then
     if [ -z "$SNIC_TMP" ]
@@ -178,7 +183,7 @@ do
 	patient_exonic_variant=${patient_avlist}.exonic_variant_function
 	if needsUpdate $patient_exonic_variant $patient_avlist $ANNOVARBIN/annotate_variation.pl
 	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_avlist $AVDBDIR"
+	    runme="$ANNOVARBIN/annotate_variation.pl --splicing_threshold $ANNOVAR_SPLICING_THRESHOLD --buildver hg19 $patient_avlist $AVDBDIR"
 	    vanillaRun "$runme" "$patient_exonic_variant" "result" "ANNOVAR --geneanno"
 	fi
 
@@ -192,11 +197,11 @@ do
 	patient_exonic_variant=${patient_pass_avlist}.exonic_variant_function
 	if needsUpdate $patient_exonic_variant $patient_pass_avlist $ANNOVARBIN/annotate_variation.pl
 	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_pass_avlist $AVDBDIR"
+	    runme="$ANNOVARBIN/annotate_variation.pl --splicing_threshold $ANNOVAR_SPLICING_THRESHOLD --buildver hg19 $patient_pass_avlist $AVDBDIR"
 	    vanillaRun "$runme" "$patient_exonic_variant" "result" "ANNOVAR --geneanno"
 	fi
 
-        # gather exonic;splicing from variant_function
+        # gather exonic;spilcing from variant_function
 	patient_all_variant_function=${patient_pass_avlist}.variant_function
 	patient_all_splicing=${patient_all_variant_function}.splicing
 	if needsUpdate $patient_all_splicing $patient_all_variant_function
@@ -205,6 +210,7 @@ do
 	    vanillaRun "$runme" "$patient_all_splicing" "result" "Extract passed splicing variants."
 	fi
 
+	patient_rare_filter=${patient_pass_avlist}.rare
 	patient_maf_filter=${patient_pass_avlist}.hg19_ALL.sites.2010_11_filtered
 	if needsUpdate $patient_maf_filter $patient_pass_avlist $ANNOVARBIN/annotate_variation.pl
 	then
@@ -229,32 +235,37 @@ do
 	    vanillaRun "$runme" "$patient_danes_filter" "result" "ANNOVAR --filter 200danes"
 	    mv $patient_danes_filter_orig $patient_danes_filter
 	fi
-
-	patient_danes_exonic_variant=${patient_danes_filter}.exonic_variant_function
-	if needsUpdate $patient_danes_exonic_variant $patient_danes_filter $ANNOVARBIN/annotate_variation.pl
+	
+	if needsUpdate $patient_rare_filter $patient_danes_filter
 	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --geneanno --buildver hg19 $patient_danes_filter $AVDBDIR"
-	    vanillaRun "$runme" "$patient_danes_exonic_variant" "result" "ANNOVAR 1000g MAF $ANNOVAR_1KG_MAF and 200danes --geneanno"
+	    cp $patient_danes_filter $patient_rare_filter
 	fi
 
-	patient_uncommon_not_syn=${patient_danes_exonic_variant}.not_syn
-	if needsUpdate $patient_uncommon_not_syn $patient_danes_exonic_variant
+	patient_rare_exonic_variant=${patient_rare_filter}.exonic_variant_function
+	if needsUpdate $patient_rare_exonic_variant $patient_rare_filter $ANNOVARBIN/annotate_variation.pl
 	then
-	    runme="cut -f2- $patient_danes_exonic_variant | awk '(\$1 != \"synonymous\") { print }' > $patient_uncommon_not_syn"
+	    runme="$ANNOVARBIN/annotate_variation.pl --geneanno --splicing_threshold $ANNOVAR_SPLICING_THRESHOLD --buildver hg19 $patient_rare_filter $AVDBDIR"
+	    vanillaRun "$runme" "$patient_rare_exonic_variant" "result" "ANNOVAR 1000g MAF $ANNOVAR_1KG_MAF and 200danes --geneanno"
+	fi
+
+	patient_uncommon_not_syn=${patient_rare_exonic_variant}.not_syn
+	if needsUpdate $patient_uncommon_not_syn $patient_rare_exonic_variant
+	then
+	    runme="cut -f2- $patient_rare_exonic_variant | awk '(\$1 != \"synonymous\") { print }' > $patient_uncommon_not_syn"
 	    vanillaRun "$runme" "$patient_uncommon_not_syn" "result" "Ignore synonymous variants without any other severity prediction."
 	fi
 
-	patient_pp2_filter=${patient_danes_filter}.hg19_ljb_pp2_filtered
-	if needsUpdate $patient_pp2_filter $patient_danes_filter $ANNOVARBIN/annotate_variation.pl
+	patient_pp2_filter=${patient_rare_filter}.hg19_ljb_pp2_filtered
+	if needsUpdate $patient_pp2_filter $patient_rare_filter $ANNOVARBIN/annotate_variation.pl
 	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype ljb_pp2 --reverse --score_threshold $ANNOVAR_PP2_BENIGN --buildver hg19 $patient_danes_filter $AVDBDIR"
+	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype ljb_pp2 --reverse --score_threshold $ANNOVAR_PP2_BENIGN --buildver hg19 $patient_rare_filter $AVDBDIR"
 	    vanillaRun "$runme" "$patient_pp2_filter" "result" "ANNOVAR --filter PolyPhen2 benign level $ANNOVAR_PP2_BENIGN"
 	fi
 
 	patient_pp2_exonic_variant=${patient_pp2_filter}.exonic_variant_function
 	if needsUpdate $patient_pp2_exonic_variant $patient_pp2_filter $ANNOVARBIN/annotate_variation.pl
 	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_pp2_filter $AVDBDIR"
+	    runme="$ANNOVARBIN/annotate_variation.pl --splicing_threshold $ANNOVAR_SPLICING_THRESHOLD --buildver hg19 $patient_pp2_filter $AVDBDIR"
 	    vanillaRun "$runme" "$patient_pp2_exonic_variant" "result" "ANNOVAR PolyPhen2 benign $ANNOVAR_PP2_BENIGN --geneanno"
 	fi
 	
@@ -303,7 +314,7 @@ do
 	    vanillaRun "$runme" "$patient_recessive_avlist" "temp" "Produce recessive model avlist"
 	fi
 
-	# filter against dbSNP - will retain for most apps; regarded mostly as an rsID annotation step.
+	# RECESSIVE: filter against dbSNP - will retain for most apps; regarded mostly as an rsID annotation step.
 	patient_recessive_dbSNP_filter=${patient_recessive_avlist}.hg19_snp132_filtered
 	if needsUpdate $patient_recessive_dbSNP_filter $patient_recessive_avlist $ANNOVARBIN/annotate_variation.pl
 	then
@@ -311,7 +322,7 @@ do
 	    vanillaRun "$runme" "$patient_recessive_dbSNP_filter" "result" "ANNOVAR --filter dbSNP132"
 	fi
 
-	# filter against dbSNP - will retain for most apps; regarded mostly as an rsID annotation step.
+	# DOMINANT: filter against dbSNP - will retain for most apps; regarded mostly as an rsID annotation step.
 	patient_dbSNP_filter=${patient_pp2_filter}.hg19_snp132_filtered
 	if needsUpdate $patient_dbSNP_filter $patient_pp2_filter $ANNOVARBIN/annotate_variation.pl
 	then
@@ -319,15 +330,44 @@ do
 	    vanillaRun "$runme" "$patient_dbSNP_filter" "result" "ANNOVAR --filter dbSNP132"
 	fi
 	
-	# indispensable filter also dbSNP-remaining.
-	patient_dbSNP_indisp=${patient_dbSNP_filter}.indisp
-	if needsUpdate $patient_dbSNP_indisp $patient_dbSNP_filter $ANNOVAR_DISPENSABLE
+	# annotate... 
+	patient_dbSNP_exonic_variant=${patient_dbSNP_filter}.exonic_variant_function
+	if needsUpdate $patient_dbSNP_exonic_variant $patient_dbSNP_filter $ANNOVARBIN/annotate_variation.pl
 	then
-	  runme="grep -v -w -f $ANNOVAR_DISPENSABLE $patient_dbSNP_filter > $patient_dbSNP_indisp"
-	  vanillaRun "$runme" "$patient_dbSNP_indisp" "result" "Filter variants in dispensable genes (after dbSNP variants have been removed)."
+	    runme="$ANNOVARBIN/annotate_variation.pl --splicing_threshold $ANNOVAR_SPLICING_THRESHOLD --buildver hg19 $patient_dbSNP_filter $AVDBDIR"
+	    vanillaRun "$runme" "$patient_dbSNP_exonic_variant" "result" "ANNOVAR PolyPhen2 & snp132-filtered --geneanno"
+	fi
+	
+	patient_dbSNP_variant_function=${patient_dbSNP_filter}.variant_function
+	patient_dbSNP_splicing=${patient_dbSNP_variant_function}.splicing
+	if needsUpdate $patient_dbSNP_splicing $patient_dbSNP_variant_function
+	then
+	    runme="awk '(\$1 == \"exonic;splicing\" || \$1 == \"splicing\") { print }' $patient_dbSNP_variant_function > $patient_dbSNP_splicing"
+	    vanillaRun "$runme" "$patient_dbSNP_splicing" "result" "Extract splicing variants."
+	fi
+        
+	patient_not_syn=${patient_dbSNP_exonic_variant}.not_syn
+	if needsUpdate $patient_not_syn $patient_dbSNP_exonic_variant
+	then
+	    runme="cut -f2- $patient_dbSNP_exonic_variant | awk '(\$1 != \"synonymous\") { print }' > $patient_not_syn"
+	    vanillaRun "$runme" "$patient_not_syn" "result" "Ignore synonymous variants for now."
 	fi
 
-        # cnv analysis...
+	patient_dbSNP_splicing_indisp=${patient_dbSNP_splicing}.indisp
+	if needsUpdate $patient_dbSNP_splicing_indisp $patient_dbSNP_splicing $ANNOVAR_DISPENSABLE
+	then
+	  runme="grep -v -w -f $ANNOVAR_DISPENSABLE $patient_dbSNP_splicing > $patient_dbSNP_splicing_indisp"
+	  vanillaRun "$runme" "$patient_dbSNP_splicing_indisp" "result" "Filter splicing variants in dispensable genes."
+	fi
+
+	patient_not_syn_indisp=${patient_not_syn}.indisp
+	if needsUpdate $patient_not_syn_indisp $patient_not_syn $ANNOVAR_DISPENSABLE
+	then
+	  runme="grep -v -w -f $ANNOVAR_DISPENSABLE $patient_not_syn > $patient_not_syn_indisp"
+	  vanillaRun "$runme" "$patient_not_syn_indisp" "result" "Filter variants in dispensable genes."
+	fi
+
+       # cnv analysis...
 	
 	# variants in common, genes in common, both for dominant and recessive
 
