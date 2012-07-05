@@ -411,12 +411,17 @@ do
 	    mkdir -p $MOSAIK_TMP/`dirname $patient_dat`
 	    patient_dat=$MOSAIK_TMP/$patient_dat
 
-	    final_patient_bam=${patient_dat%%dat}mosaik.bam
+	    patient_bam=${patient_dat%%dat}mosaik.bam
+	    final_patient_bam=${patient_bam##${MOSAIK_TMP}/}
+
+	    echo "DEBUG: $final_patient_bam"
+
 	    if needsUpdate ${final_patient_bam} ${patient_fastq_gz} $MOSAIKBIN/MosaikBuild $MOSAIKBIN/MosaikAligner $MOSAIKBIN/MosaikText $reference_jump $MOSAIKBIN/MosaikDupSnoop $MOSAIKBIN/MosaikSort
 	    then
 		run_align="yes"
 	    else
 		run_align="no"
+		patient_bam=$final_patient_bam
 	    fi
 	fi
 
