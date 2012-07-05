@@ -13,7 +13,7 @@ module load mosaik-aligner/1.1.0021
 mosaik_aligner=`which MosaikAligner`
 export MOSAIKBIN=`dirname $mosaik_aligner`
 
-export REFERENCE=human_g1k_v37.fasta.gz
+export REFERENCE=/proj/b2011146/private/reference/human_g1k_v37.fasta.gz
 
 export mismatches=14
 export sw_bandwidth=33
@@ -33,9 +33,14 @@ export BINDIR=$HOME/sandbox/etiologica/bin
 
 export ANNOVARBIN=$HOME/src/annovar
 export ANNOVAR_DISPENSABLE=$HOME/src/annovar/example/dispensable.all
-export ANNOVAR_1KG_MAF=0.1
+export ANNOVAR_1KG_MAF=0.02
 export ANNOVAR_PP2_BENIGN=0.85
 export AVDBDIR=$HOME/src/annovar/humandb
+export LOCAL_CLIN_DB="hg19_100clinical.real.avdb"
+export LOCAL_DANES_DB="hg19_200danes.avdb"
+export DB_SNP_VERSION="snp135NonFlagged"
+
+# UPPMAX avdbdir is not up to date
 #export AVDBDIR=/bubo/nobackup/uppnex/annotations/annovar/humandb/
 
 export SAMTOOLS=$HOME/src/samtools-0.1.18/samtools
