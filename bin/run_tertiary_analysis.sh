@@ -117,6 +117,22 @@ then
 fi
 log "ANNOVAR AVDBDIR: $AVDBDIR" "main"
 
+LOCAL_DB_FILTER="yes"
+if [ -z "$LOCAL_CLIN_DB" ] 
+then 
+    LOCAL_DB_FILTER="no"
+fi 
+
+if [ -z "$LOCAL_DANES_DB" ] 
+then
+    LOCAL_DB_FILTER="no"
+fi
+
+if [ -z "$DB_SNP_VERSION" ]
+then
+    DB_SNP_VERSION="snp132"
+fi
+
 if [ -z "$ANNOVAR_PP2_BENIGN" ]
 then
     ANNOVAR_PP2_BENIGN=0.85
@@ -220,25 +236,31 @@ do
 
 	patient_100clinical_filter_orig=${patient_maf_filter}.hg19_generic_filtered
 	patient_100clinical_filter=${patient_maf_filter}.hg19_100clinical_filtered
-	if needsUpdate $patient_100clinical_filter $patient_maf_filter $ANNOVARBIN/annotate_variation.pl
-	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype generic --genericdbfile hg19_100clinical.avdb --buildver hg19 $patient_maf_filter $AVDBDIR"
-	    vanillaRun "$runme" "$patient_100clinical_filter" "result" "ANNOVAR --filter 100clinical"
-	    mv $patient_100clinical_filter_orig $patient_100clinical_filter
-	fi
-
-	patient_danes_filter_orig=${patient_100clinical_filter}.hg19_generic_filtered
-	patient_danes_filter=${patient_100clinical_filter}.hg19_200danes_filtered
-	if needsUpdate $patient_danes_filter $patient_clinical_filter $ANNOVARBIN/annotate_variation.pl
-	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype generic --genericdbfile hg19_200danes.avdb --buildver hg19 $patient_100clinical_filter $AVDBDIR"
-	    vanillaRun "$runme" "$patient_danes_filter" "result" "ANNOVAR --filter 200danes"
-	    mv $patient_danes_filter_orig $patient_danes_filter
-	fi
 	
-	if needsUpdate $patient_rare_filter $patient_danes_filter
+	if [ "$LOCAL_DB_FILTER" == "yes" ]
 	then
-	    cp $patient_danes_filter $patient_rare_filter
+	    if needsUpdate $patient_100clinical_filter $patient_maf_filter $ANNOVARBIN/annotate_variation.pl
+	    then
+		runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype generic --genericdbfile $LOCAL_CLIN_DB --buildver hg19 $patient_maf_filter $AVDBDIR"
+		vanillaRun "$runme" "$patient_100clinical_filter" "result" "ANNOVAR --filter 100clinical"
+		mv $patient_100clinical_filter_orig $patient_100clinical_filter
+	    fi
+
+	    patient_danes_filter_orig=${patient_100clinical_filter}.hg19_generic_filtered
+	    patient_danes_filter=${patient_100clinical_filter}.hg19_200danes_filtered
+	    if needsUpdate $patient_danes_filter $patient_100clinical_filter $ANNOVARBIN/annotate_variation.pl
+	    then
+		runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype generic --genericdbfile $LOCAL_DANES_DB --buildver hg19 $patient_100clinical_filter $AVDBDIR"
+		vanillaRun "$runme" "$patient_danes_filter" "result" "ANNOVAR --filter 200danes"
+		mv $patient_danes_filter_orig $patient_danes_filter
+	    fi
+	
+	    if needsUpdate $patient_rare_filter $patient_danes_filter
+	    then
+		cp $patient_danes_filter $patient_rare_filter
+	    fi
+	else 
+	    patient_rare_filter=$patient_maf_filter 
 	fi
 
 	patient_rare_exonic_variant=${patient_rare_filter}.exonic_variant_function
@@ -315,19 +337,19 @@ do
 	fi
 
 	# RECESSIVE: filter against dbSNP - will retain for most apps; regarded mostly as an rsID annotation step.
-	patient_recessive_dbSNP_filter=${patient_recessive_avlist}.hg19_snp132_filtered
+	patient_recessive_dbSNP_filter=${patient_recessive_avlist}.hg19_${DB_SNP_VERSION}_filtered
 	if needsUpdate $patient_recessive_dbSNP_filter $patient_recessive_avlist $ANNOVARBIN/annotate_variation.pl
 	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype snp132 --buildver hg19 $patient_recessive_avlist $AVDBDIR"
-	    vanillaRun "$runme" "$patient_recessive_dbSNP_filter" "result" "ANNOVAR --filter dbSNP132"
+	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype ${DB_SNP_VERSION} --buildver hg19 $patient_recessive_avlist $AVDBDIR"
+	    vanillaRun "$runme" "$patient_recessive_dbSNP_filter" "result" "ANNOVAR --filter db${DB_SNP_VERSION}"
 	fi
 
 	# DOMINANT: filter against dbSNP - will retain for most apps; regarded mostly as an rsID annotation step.
-	patient_dbSNP_filter=${patient_pp2_filter}.hg19_snp132_filtered
+	patient_dbSNP_filter=${patient_pp2_filter}.hg19_${DB_SNP_VERSION}_filtered
 	if needsUpdate $patient_dbSNP_filter $patient_pp2_filter $ANNOVARBIN/annotate_variation.pl
 	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype snp132 --buildver hg19 $patient_pp2_filter $AVDBDIR"
-	    vanillaRun "$runme" "$patient_dbSNP_filter" "result" "ANNOVAR --filter dbSNP132"
+	    runme="$ANNOVARBIN/annotate_variation.pl --filter --dbtype ${DB_SNP_VERSION} --buildver hg19 $patient_pp2_filter $AVDBDIR"
+	    vanillaRun "$runme" "$patient_dbSNP_filter" "result" "ANNOVAR --filter db${DB_SNP_VERSION}"
 	fi
 	
 	# annotate... 
@@ -335,7 +357,7 @@ do
 	if needsUpdate $patient_dbSNP_exonic_variant $patient_dbSNP_filter $ANNOVARBIN/annotate_variation.pl
 	then
 	    runme="$ANNOVARBIN/annotate_variation.pl --splicing_threshold $ANNOVAR_SPLICING_THRESHOLD --buildver hg19 $patient_dbSNP_filter $AVDBDIR"
-	    vanillaRun "$runme" "$patient_dbSNP_exonic_variant" "result" "ANNOVAR PolyPhen2 & snp132-filtered --geneanno"
+	    vanillaRun "$runme" "$patient_dbSNP_exonic_variant" "result" "ANNOVAR PolyPhen2 & ${DB_SNP_VERSION}-filtered --geneanno"
 	fi
 	
 	patient_dbSNP_variant_function=${patient_dbSNP_filter}.variant_function
