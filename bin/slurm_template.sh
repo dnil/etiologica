@@ -29,13 +29,16 @@ export TEMP=$SNIC_TMP
 export MOSAIK_DAT_ON_SCRATCH="yes"
 #MOSIK_DAT_ON_SCRATCH=yes
 
-export BINDIR=$HOME/sandbox/etiologica/bin
+#export BASE=$HOME
+export BASE=/home/danieln
 
-export ANNOVARBIN=$HOME/src/annovar
-export ANNOVAR_DISPENSABLE=$HOME/src/annovar/example/dispensable.all
+export BINDIR=$BASE/sandbox/etiologica/bin
+
+export ANNOVARBIN=$BASE/src/annovar
+export ANNOVAR_DISPENSABLE=$BASE/src/annovar/example/dispensable.all
 export ANNOVAR_1KG_MAF=0.02
 export ANNOVAR_PP2_BENIGN=0.85
-export AVDBDIR=$HOME/src/annovar/humandb
+export AVDBDIR=$BASE/src/annovar/humandb
 export LOCAL_CLIN_DB="hg19_100clinical.real.avdb"
 export LOCAL_DANES_DB="hg19_200danes.avdb"
 export DB_SNP_VERSION="snp135NonFlagged"
@@ -43,17 +46,18 @@ export DB_SNP_VERSION="snp135NonFlagged"
 # UPPMAX avdbdir is not up to date
 #export AVDBDIR=/bubo/nobackup/uppnex/annotations/annovar/humandb/
 
-export SAMTOOLS=$HOME/src/samtools-0.1.18/samtools
-export BCFTOOLS=$HOME/src/samtools-0.1.18/bcftools/bcftools
-export VCFUTILS=$HOME/src/samtools-0.1.18/bcftools/vcfutils.pl
-export FASTQC=$HOME/src/FastQC/fastqc
+export SAMTOOLS=$BASE/src/samtools-0.1.18/samtools
+export BCFTOOLS=$BASE/src/samtools-0.1.18/bcftools/bcftools
+export VCFUTILS=$BASE/src/samtools-0.1.18/bcftools/vcfutils.pl
+export FASTQC=$BASE/src/FastQC/fastqc
 
 #cd /proj/b2011097/private/chr9q
 
 # first pass..
 #for file in *fastq ; 
 #do 
-#    cat $file | gzip -c > ${file}.gz
+# pigz $file
 #done
 
 $BINDIR/run_secondary_analysis.sh
+$BINDIR/run_tertiary_analysis.sh
