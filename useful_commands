@@ -325,3 +325,11 @@ for file in patient/*mosaik.bam ; do ~/src/samtools-0.1.18/samtools reheader $fi
 
 
 
+ cut -f 1-7 6_120524_AD10YKACXX_P197_1_indexa29_1.var.flt.pass.avlist.rare.hg19_ljb_pp2_filtered.hg19_snp135NonFlagged_filtered.exonic_variant_function.not_syn.indisp > kid.rare.notsyn.indisp
+ 1051  cut -f 1-7 Sample_3_2_1.var.flt.pass.avlist.rare.hg19_ljb_pp2_filtered.hg19_snp135NonFlagged_filtered.exonic_variant_function.not_syn.indisp > mom.rare.notsyn.indisp
+ 1052  cut -f 1-7 Sample_3_1_1.var.flt.pass.avlist.rare.hg19_ljb_pp2_filtered.hg19_snp135NonFlagged_filtered.exonic_variant_function.not_syn.indisp > dad.rare.notsyn.indisp
+cat mom.rare.notsyn.indisp dad.rare.notsyn.indisp |sort |uniq >mom_and_dad.rare.notsyn.indisp
+ grep -v -f mom_and_dad.rare.notsyn.indisp kid.rare.notsyn.indisp 
+
+
+for file in `ls *.var.flt.vcf.gz`; do SAMPLE=${file%%.var.flt.vcf.gz}; echo $SAMPLE; zcat $file | sed -e 's/unknown/'$SAMPLE'/;' |gzip > ${file%%vcf.gz}.sn.vcf.gz ; donefor file in *flt.vcf; do name=${file%%.var.flt.vcf}; grep ^\# $file  |sed -e 's/unknown/'$name'/;' > ${file%%.vcf}.pass.reheader.vcf ; grep -v ^\# ${file%%flt.vcf}flt.pass.vcf >> ${file%%.vcf}.pass.reheader.vcf; done
