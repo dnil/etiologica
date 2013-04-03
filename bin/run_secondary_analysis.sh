@@ -25,8 +25,10 @@ Daniel Nilsson, daniel.nilsson@scilifelab.se, daniel.nilsson@ki.se, daniel.nilss
 =head1 SYNOPSIS
 
  mkdir myproject
- ln -s patientid.fastq myproject/
  cd myproject
+ ln -s ../raw/patientid_1.fastq.gz .
+ ln -s ../raw/patientid_2.fastq.gz .
+
  run_secondary_analysis.sh
 
 =head1 DESCRIPTION
@@ -88,10 +90,14 @@ Path to the annovar main scripts.
 
 POD_ENV
 
+# set hard defaults in case of a missing environment variables
+
 if [ -z "$BINDIR" ]
 then 
     BINDIR=`dirname $my_path`
 fi
+
+# load pipeline library and commence logging.
 
 PIPELINE=etiologica
 PIPELINEFUNK=$BINDIR/pipelinefunk.sh
@@ -108,15 +114,25 @@ log "REFERENCE: $REFERENCE" "main"
 
 if [ -z "$SAMTOOLS" ]
 then 
-    SAMTOOLS=/home/daniel/src/samtools-0.1.17/samtools
+    SAMTOOLS=/home/daniel/src/samtools-0.1.18/samtools
 fi
 log "SAMTOOLS: $SAMTOOLS" "main"
 
 if [ -z "$BCFTOOLS" ]
 then 
-    BCFTOOLS=/home/daniel/src/samtools-0.1.17/bcftools/bcftools
+    BCFTOOLS=/home/daniel/src/samtools-0.1.18/bcftools/bcftools
 fi
 log "BCFTOOLS: $BCFTOOLS" "main"
+
+if [ -z "$GATKJAR" ]
+then
+    GATKJAR=/bubo/sw/apps/bioinfo/GATK/2.3.6/GenomeAnalysisTK.jar
+fi
+
+if [ -z "$GATKREFERENCE" ]
+then
+    GATKREFERENCE=${REFERENCE%%.gz}
+fi
 
 if [ -z "$FASTQC" ]
 then 
@@ -324,7 +340,7 @@ do
 
 	if workLockOk $patientfastqc_zip
 	then
-	    log "Locked $patient_fastqc_zip for FastQC." "main"
+	    log "Locked $patientfastqc_zip for FastQC." "main"
 	    runme="$FASTQC $patientfastq"
 	    vanillaRun "$runme" "$patientfastqc_zip" "result" "FastQC"
 
@@ -533,47 +549,29 @@ POD_MOSAIKDUP
 	if needsUpdate $patient_vcf $patient_bcf $BCFTOOLS $VCFUTILS
 	then	    
 	    runme="$BCFTOOLS view $patient_bcf | $VCFUTILS varFilter $VCFUTILS_var_filter_settings > $patient_vcf"
-	    vanillaRun "$runme" "$patient_vcf" "result" "bcftools view |vcfutils varFilter"
-	fi
-	
-	patient_pass_vcf=${patient_vcf%%vcf}pass.vcf
-	if needsUpdate $patient_pass_vcf $patient_vcf
-	then
-	    # generic baq-filter : NB need to avoid $6 being evaluated already att passing... PASS only?
-	    # note: mpileup does not give PASS, only UnifiedGenotyper.. Go GATK.
-	    runme="awk '(\$6>=20) { print; }' < $patient_vcf > $patient_pass_vcf"
-#	    runme="awk '(\$7==\"PASS\") { print; }' < $patient_vcf > $patient_pass_vcf"
-	    vanillaRun "$runme" "$patient_pass_vcf" "result" "Filter VCF to pass."
-	fi
-	
-	patient_avlist=${patient_vcf%%vcf}avlist
-	if needsUpdate $patient_avlist $patient_vcf $ANNOVARBIN/convert2annovar.pl
-	then
-	    runme="$ANNOVARBIN/convert2annovar.pl -allallele -format vcf4 $patient_vcf > $patient_avlist"
-	    vanillaRun "$runme" "$patient_avlist" "result" "convert2annovar"
+	    	    
+	    vanillaRun "$runme" "$patient_vcf" "result" "bcftools view |vcfutils varFilter |reheader"
+
+            # hotfix for "unknown" sample names from bad bam header @RG, required by GATK..
+	    # should instead reheader original bam or better yet pass metadata to Mosaik upon bam creation..
+	    reheader_vcf=${patient_vcf%%vcf}reheader.vcf
+
+	    patient_basename=`basename $patient_vcf`
+	    samplename=${patient_basename%%.var.flt.vcf}
+	    grep "^\#" $patient_vcf |sed -e 's/unknown/'$samplename'/;' > $reheader_vcf 
+	    grep -v "^\#" $patient_vcf >> $reheader_vcf
+	    mv $reheader_vcf $patient_vcf
+	    # end hotfix
 	fi
 
-	patient_exonic_variant=${patient_avlist}.exonic_variant_function
-	if needsUpdate $patient_exonic_variant $patient_avlist $ANNOVARBIN/annotate_variation.pl
+	noGLvcf=${patient_vcf%%.vcf}.noGL.vcf
+	patient_left_vcf=${noGLvcf%%.noGL.vcf}.leftAlign.vcf
+	if needsUpdate $patient_left_vcf $patient_vcf $GATKJAR
 	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_avlist $AVDBDIR"
-	    vanillaRun "$runme" "$patient_exonic_variant" "result" "ANNOVAR --geneanno"
+	    runme="grep -v GL0 $patient_vcf > $noGLvcf; java -Xmx2g -jar $GATKJAR -R $GATKREFERENCE -T LeftAlignVariants --variant $noGLvcf -o $patient_left_vcf"
+	    vanillaRun "$runme" "$patient_left_vcf" "result" "GATK LeftAlignVariants"
 	fi
 
-	patient_pass_avlist=${patient_pass_vcf%%vcf}avlist
-	if needsUpdate $patient_pass_avlist $patient_pass_vcf $ANNOVARBIN/convert2annovar.pl
-	then
-	    runme="$ANNOVARBIN/convert2annovar.pl -allallele -format vcf4 $patient_pass_vcf > $patient_pass_avlist"
-	    vanillaRun "$runme" "$patient_pass_avlist" "result" "convert2annovar pass"
-	fi
-
-	patient_exonic_variant=${patient_pass_avlist}.exonic_variant_function
-	if needsUpdate $patient_exonic_variant $patient_pass_avlist $ANNOVARBIN/annotate_variation.pl
-	then
-	    runme="$ANNOVARBIN/annotate_variation.pl --buildver hg19 $patient_pass_avlist $AVDBDIR"
-	    vanillaRun "$runme" "$patient_exonic_variant" "result" "ANNOVAR --geneanno"
-	fi
-	
 	releaseLock $patient_fastq_gz
 	log "Workblock exit: released lock on $patient_fastq_gz." "main"
     fi
@@ -583,11 +581,11 @@ done
 
 =head1 DEPENDENCIES
 
-Uses FastQC, MOSAIK, SAMTOOLS and ANNOVAR.
+Uses FastQC, MOSAIK, SAMTOOLS, GATK and ANNOVAR.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright Daniel Nilsson, 2011. 
+Copyright Daniel Nilsson, 2011-2013. 
 
 The package is released under the Perl Artistic License.
 
@@ -598,4 +596,3 @@ Surely!
 =cut
 
 POD_END
-    
