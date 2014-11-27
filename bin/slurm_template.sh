@@ -1,8 +1,8 @@
 #!/bin/bash -l
-#SBATCH -A b2011097
+#SBATCH -A b2014152
 #SBATCH -p node -n 1
 #SBATCH -t 26:00:00
-#SBATCH -J ccchr9q_w2
+#SBATCH -J etio_devel
 
 #export BASE=$HOME
 export BASE=/home/danieln
