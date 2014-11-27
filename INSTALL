@@ -1,0 +1,57 @@
+=head1 Install FastQC
+
+cd ~/src
+mkdir arch
+cd arch
+wget http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/fastqc_v0.9.6.zip 
+cd ..
+
+unzip arch/fastqc_v0.9.6.zip
+chmod a+x FastQC/fastqc
+
+module load java/sun_jdk1.6.0_18
+
+~/src/FastQX/fastqc --help
+
+cd arch
+wget http://mosaik-aligner.googlecode.com/files/Mosaik-1.1.0021-Linux-x64.tar.bz2
+
+
+tar jxf arch/Mosaik-1.1.0021-Linux-x64.tar.bz2
+
+# HACK!
+cd mosaik-aligner/src
+cp CommonSource/DataStructures/MosaikString.cpp CommonSource/DataStructures/MosaikString.cpp.orig
+cat CommonSource/DataStructures/MosaikString.cpp.orig| sed 's/60/104/;' > CommonSource/DataStructures/MosaikString.cpp
+make
+make utils
+
+wget http://sourceforge.net/projects/samtools/files/samtools/0.1.17/samtools-0.1.17.tar.bz2/download
+tar jxf samtools-0.1.17.tar.bz2
+cd samtools-0.1.17
+make; make razip
+
+wget http://www.openbioinformatics.org/annovar/download/annovar.latest.tar.gz.mirror
+mv annovar.tar.gz annovar.11Jun18.tar.gz
+tar zxf annovar.11Jun18.tar.gz
+cd annovar
+./annotate_variation.pl --downdb gene --buildver hg19 humandb/
+./annotate_variation.pl --downdb snp131 --buildver hg19 humandb/
+./annotate_variation.pl --downdb snp132 --buildver hg19 humandb/
+./annotate_variation.pl --downdb band --buildver hg19 humandb/
+./annotate_variation.pl --downdb mirna --buildver hg19 humandb/
+./annotate_variation.pl --downdb dgv --buildver hg19 humandb/
+./annotate_variation.pl --downdb omimgene --buildver hg19 humandb/
+./annotate_variation.pl --downdb gwascatalog --buildver hg19 humandb/
+./annotate_variation.pl --downdb 1000g2010nov --buildver hg19 humandb/
+./annotate_variation.pl --downdb avsift --buildver hg19 humandb/
+./annotate_variation.pl --downdb segdup --buildver hg19 humandb/
+./annotate_variation.pl --downdb mce46way --buildver hg19 humandb/
+/home/daniel/src/annovar/annotate_variation.pl --buildver hg19 --downdb ljb_pp2 --webfrom annovar /home/daniel/src/annovar/humandb/
+/home/daniel/src/annovar/annotate_variation.pl --buildver hg19 --downdb ljb_phylop --webfrom annovar /home/daniel/src/annovar/humandb/
+/home/daniel/src/annovar/annotate_variation.pl --buildver hg19 --downdb ljb_mt --webfrom annovar /home/daniel/src/annovar/humandb/
+/home/daniel/src/annovar/annotate_variation.pl --buildver hg19 --downdb ljb_lrt --webfrom annovar /home/daniel/src/annovar/humandb/
+
+wget ftp://ftp.sanger.ac.uk/pub/1000genomes/tk2/main_project_reference/human_g1k_v37.fasta.gz
+wget ftp://ftp.sanger.ac.uk/pub/1000genomes/tk2/main_project_reference/human_g1k_v37.fasta.gz.md5
+if `md5sum --status -c human_g1k_v37.fasta.gz.md5` ; then echo ok; else echo oops; fi
