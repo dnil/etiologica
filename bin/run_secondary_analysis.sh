@@ -232,12 +232,6 @@ then
 fi
 log "MOSAIK - mjump: $MOSAIK_mjump" "main"
 
-if [ -z $MOSAIK_mhp ]
-then
-    MOSAIK_mhp=100
-fi
-log "MOSAIK - mhp: $MOSAIK_mhp" "main"
-
 if [ -z "$MOSAIK_TMP" ]
 then 
     export MOSAIK_TMP=$TMP
@@ -304,7 +298,7 @@ then
 
     if [ "$JUMP" == "yes" ]
     then
-	runme="$MOSAIKBIN/MosaikJump -ia $reference_dat -hs $MOSAIK_mjump -out $reference_jump -mhp $MOSAIK_mhp"
+	runme="$MOSAIKBIN/MosaikJump -ia $reference_dat -hs $MOSAIK_mjump -out $reference_jump"
 	vanillaRun "$runme" "$reference_jump" "common" "MosaikJump"
     fi
 fi
@@ -466,17 +460,17 @@ do
 		dupstring=""
 	    fi
 	    
-	    patient_aln_dat=${patient_dat%%dat}mosaik.dat
+	    patient_aln_mka=${patient_dat%%dat}mosaik.mka
 
-	    if needsUpdate $patient_aln_dat $patient_dat $reference_jump $MOSAIKBIN/MosaikAligner
+	    if needsUpdate $patient_aln_mka $patient_dat $reference_jump $MOSAIKBIN/MosaikAligner
 	    then
 		if [ "$JUMP" == "yes" ]
 		then
-		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_dat -m $MOSAIK_ALIGN_MODE -hs $MOSAIK_mjump -bw $MOSAIK_sw_bandwidth -j $reference_jump -mhp $MOSAIK_mhp -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -p $MOSAIK_CORES"
+		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -hs $MOSAIK_mjump -bw $MOSAIK_sw_bandwidth -j $reference_jump -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -p $MOSAIK_CORES"
 		else
-		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_dat -m $MOSAIK_ALIGN_MODE -bw $MOSAIK_sw_bandwidth -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -p $MOSAIK_CORES"
+		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -bw $MOSAIK_sw_bandwidth -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -p $MOSAIK_CORES"
 		fi
-		vanillaRun "$runme" "$patient_aln_dat" "temp" "MosaikAligner"
+		vanillaRun "$runme" "$patient_aln_mka" "temp" "MosaikAligner"
 	    fi
 
 	    : <<POD_MOSAIKDUP
@@ -491,40 +485,40 @@ duplicate checking is turned off.
 
 POD_MOSAIKDUP
 
-	    patient_lib_dupdata_dir=${patient_aln_dat%%.mosaik.dat}_DupData
+#	    patient_lib_dupdata_dir=${patient_aln_dat%%.mosaik.dat}_DupData
 
-	    if [ "$MATEPAIRS" != 0 ] 
-	    then
-		if needsUpdate ${patient_lib_dupdata_dir}/.db $patient_aln_dat $MOSAIKBIN/MosaikDupSnoop
-		then
-		    if [ ! -d $patient_lib_dupdata_dir ]
-		    then
-			mkdir $patient_lib_dupdata_dir
-		    fi
+#	    if [ "$MATEPAIRS" != 0 ] 
+#	    then
+#		if needsUpdate ${patient_lib_dupdata_dir}/.db $patient_aln_dat $MOSAIKBIN/MosaikDupSnoop
+#		then
+#		    if [ ! -d $patient_lib_dupdata_dir ]
+#		    then
+#			mkdir $patient_lib_dupdata_dir
+#		    fi
 		    
-		    runme="$MOSAIKBIN/MosaikDupSnoop -in $patient_aln_dat -od $patient_lib_dupdata_dir"
-		    vanillaRun "$runme" "$patient_lib_dupdata_dir/.db" "temp" "MosaikDupSnoop"
-		fi
-	    fi
+#		    runme="$MOSAIKBIN/MosaikDupSnoop -in $patient_aln_dat -od $patient_lib_dupdata_dir"
+#		    vanillaRun "$runme" "$patient_lib_dupdata_dir/.db" "temp" "MosaikDupSnoop"
+#		fi
+#	    fi
 
-	    patient_sorted=${patient_aln_dat%%dat}sorted.dat
+#	    patient_sorted=${patient_aln_dat%%dat}sorted.dat
 
-	    if needsUpdate ${patient_sorted} $patient_aln_dat $MOSAIKBIN/MosaikSort
-	    then
-		if [ "$MATEPAIRS" == 0 ]
-		then 
-		    dupstring=""
-		else
-		    dupstring="-dup $patient_lib_dupdata_dir"
-		fi
+#	    if needsUpdate ${patient_sorted} $patient_aln_dat $MOSAIKBIN/MosaikSort
+#	    then
+#		if [ "$MATEPAIRS" == 0 ]
+#		then 
+#		    dupstring=""
+#		else
+#		    dupstring="-dup $patient_lib_dupdata_dir"
+#		fi
 		
-		runme="$MOSAIKBIN/MosaikSort -in $patient_aln_dat -out $patient_sorted $dupstring"
-		vanillaRun "$runme" "$patient_sorted" "temp" "MosaikSort"
-	    fi
+#		runme="$MOSAIKBIN/MosaikSort -in $patient_aln_dat -out $patient_sorted $dupstring"
+#		vanillaRun "$runme" "$patient_sorted" "temp" "MosaikSort"
+#	    fi
 
        # TODO: mosaik merge, when several libs for one patient are available.
 
-	    patient_bam=${patient_sorted%%sorted.dat}bam
+	    patient_bam=${patient_aln_mka%%mka}bam
 
 	    if [ $MOSAIK_DAT_ON_SCRATCH == "yes" ] 
 	    then

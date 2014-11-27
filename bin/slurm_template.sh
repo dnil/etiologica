@@ -31,7 +31,7 @@ module load bioinfo-tools
 mosaik_aligner=`which MosaikAligner`
 export MOSAIKBIN=`dirname $mosaik_aligner`
 module load mosaik-aligner/2.2.30
-export REFERENCE=/proj/b2011146/private/reference/human_g1k_v37.fasta.gz
+export REFERENCE=/home/danieln/glob/private/etiologica_ref/hs37d5.fa.gz
 
 export mismatches=14
 export sw_bandwidth=33
