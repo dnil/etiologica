@@ -114,7 +114,7 @@ log "REFERENCE: $REFERENCE" "main"
 
 if [ -z "$SAMTOOLS" ]
 then 
-    SAMTOOLS=/home/daniel/src/samtools-0.1.18/samtools
+    SAMTOOLS=/home/daniel/src/samtools-0.1.11/samtools
 fi
 log "SAMTOOLS: $SAMTOOLS" "main"
 
@@ -329,7 +329,7 @@ Runs FastQC for each fastq.gz file.
 
 POD_FASTQC
 
-for patientfastq in patient/*fastq.gz
+for patientfastq in patient/*.fastq.gz
 do    
     patientfastqc_zip=${patientfastq%%.fastq.gz}_fastqc.zip
 
