@@ -460,7 +460,7 @@ do
 		patient_2_fastq_gz=${patient_fastq_gz%%_1.fastq.gz}_2.fastq.gz
 		if needsUpdate $patient_dat $patient_fastq_gz $patient_2_fastq_gz
 		then
-		    runme="$MOSAIKBIN/MosaikBuild -q $patient_fastq_gz -q2 $patient_2_fastq_gz -out $patient_dat -st illumina"
+		    runme="$MOSAIKBIN/MosaikBuild -q $patient_fastq_gz -q2 $patient_2_fastq_gz -mfl $MOSAIK_mfl -out $patient_dat -st illumina"
 		    vanillaRun "$runme" "$patient_dat" "temp" "MosaikBuild"
 		fi
 	    fi
@@ -478,7 +478,7 @@ do
 	    then
 		if [ "$JUMP" == "yes" ]
 		then
-		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -hs $MOSAIK_mjump -bw $MOSAIK_sw_bandwidth -j $reference_jump -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -mfl $MOSAIK_mfl -annpe $MOSAIK_annpe -p $MOSAIK_CORES"
+		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -hs $MOSAIK_mjump -bw $MOSAIK_sw_bandwidth -j $reference_jump -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -annpe $MOSAIK_annpe -p $MOSAIK_CORES"
 		else
 		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -bw $MOSAIK_sw_bandwidth -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -mfl $MOSAIK_mfl -annpe $MOSAIK_annpe -p $MOSAIK_CORES"
 		fi
