@@ -399,7 +399,7 @@ else
 fi
 
 for patient_fastq_gz in ${patient_fastq_list[@]}
-do 
+do
     # 
     # File locking for multiple script instances concurrently in same directory.
     # One instance per patient fastq.gz is a rather appropriate work block right now - if 

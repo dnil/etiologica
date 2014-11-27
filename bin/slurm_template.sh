@@ -4,6 +4,21 @@
 #SBATCH -t 26:00:00
 #SBATCH -J ccchr9q_w2
 
+#export BASE=$HOME
+export BASE=/home/danieln
+
+module load bioinfo-tools
+module load samtools/0.1.19
+samtools_bin=`which samtools`
+export SAMTOOLS=$samtools_bin
+export SAMTOOLSBIN=`dirname $samtools_bin`
+export BCFTOOLS=$SAMTOOLSBIN/bcftools
+export VCFUTILS=$SAMTOOLSBIN/vcfutils.pl
+
+#export SAMTOOLS=$BASE/src/samtools-0.1.18/samtools
+#export BCFTOOLS=$BASE/src/samtools-0.1.18/bcftools/bcftools
+#export VCFUTILS=$BASE/src/samtools-0.1.18/bcftools/vcfutils.pl
+
 # FastQC wants java
 module load java/sun_jdk1.6.0_18
 
@@ -29,9 +44,6 @@ export TEMP=$SNIC_TMP
 export MOSAIK_DAT_ON_SCRATCH="yes"
 #MOSIK_DAT_ON_SCRATCH=yes
 
-#export BASE=$HOME
-export BASE=/home/danieln
-
 export BINDIR=$BASE/sandbox/etiologica/bin
 
 export ANNOVARBIN=$BASE/src/annovar
@@ -46,9 +58,6 @@ export DB_SNP_VERSION="snp135NonFlagged"
 # UPPMAX avdbdir is not up to date
 #export AVDBDIR=/bubo/nobackup/uppnex/annotations/annovar/humandb/
 
-export SAMTOOLS=$BASE/src/samtools-0.1.18/samtools
-export BCFTOOLS=$BASE/src/samtools-0.1.18/bcftools/bcftools
-export VCFUTILS=$BASE/src/samtools-0.1.18/bcftools/vcfutils.pl
 export FASTQC=$BASE/src/FastQC/fastqc
 
 #cd /proj/b2011097/private/chr9q

@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+# runme="cat ${patient_not_syn_indisp} $patient_pp2_splicing_indisp |perl -e 'while(<STDIN>) { chomp; @r=split(/\t+/); @transcripts=split(/[:;(]+/,\$r[1]); \$gene=\$transcripts[0]; \$gene=~s/\)//; \$gene_row=\$gene.\"\t\".join(\"\t\",@r).\"\n\"; \$nvars{\$gene}++; \$vars{\$gene}.=\$gene_row; if((\$r[7] eq \"hom\") || (\$r[7] eq \"het\" && \$nvars{\$gene} >1) ) { \$modelok{\$gene}=1; } } foreach \$gene (keys %modelok) {print \$vars{\$gene}};' > $patient_recessive_variant_list" 
+
 
 #cat ${patient_not_syn} $patient_splicing |
 
