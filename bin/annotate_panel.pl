@@ -26,13 +26,14 @@ then
     fi
 fi
 
-#perl -ne 'chomp; print "\"exonic\",\"",$_,"\",\n";' $MYLIST > ${MYLIST}.exonic_csv
+perl -ne 'chomp; print "\"exonic\",\"",$_,"\",\n";' $MYLIST > ${MYLIST}.exonic_csv
 
 for file in *vcf.gz ; do gunzip -c $file > ${file%%.gz} ; done
-for file in *vcf ; do ~/src/annovar/convert2annovar.pl -format vcf4 -allallele $file > ${file%%vcf}avlist ; done
-for file in *avlist; do ~/src/annovar/summarize_annovar_custom.pl --buildver hg19 --ver1000g 1000g2012apr --verdbsnp 137NonFlagged --veresp 6500si --alltranscript -remove --outfile $file.var.sum $file ~/src/annovar/humandb/; done
+for file in *vcf ; do ~/src/annovar/convert2annovar.pl -format vcf4 $file > ${file%%vcf}avlist ; done
 
-for file in *exome_summary.csv; 
+for file in *avlist; do ~/src/annovar/table_annovar.pl --buildver hg19 $file ~/src/annovar/humandb/ -protocol refGene,phastConsElements46way,genomicSuperDups,popfreq_max,esp6500si_all,1000g2012apr_all,snp137,ljb2_all,clinvar_20131105 -operation g,r,r,f,f,f,f,f,f -outfile $file.sum -remove -otherinfo -csvout; done
+
+for file in *multianno*csv*; 
 do 
     csv_out="${file%%exome_summary.csv}exome_summary.${MYLIST}.csv" ; 
     grep Func,Gene $file > $csv_out;
