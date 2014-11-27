@@ -28,9 +28,9 @@ module load java/sun_jdk1.6.0_18
 # use local Mosaik build (it's the latest version anyway)
 module load bioinfo-tools
 
+module load mosaik-aligner/2.2.30
 mosaik_aligner=`which MosaikAligner`
 export MOSAIKBIN=`dirname $mosaik_aligner`
-module load mosaik-aligner/2.2.30
 export REFERENCE=/home/danieln/glob/private/etiologica_ref/hs37d5.fa.gz
 
 export mismatches=14
