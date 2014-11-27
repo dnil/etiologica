@@ -11,7 +11,6 @@ module load bioinfo-tools
 module load samtools/1.1
 module load bcftools/1.1
 
-
 samtools_bin=`which samtools`
 export SAMTOOLS=$samtools_bin
 export SAMTOOLSBIN=`dirname $samtools_bin`
@@ -44,8 +43,9 @@ export MOSAIK_TMP=$SNIC_TMP
 export TMP=$SNIC_TMP
 export TEMP=$SNIC_TMP
 
-# export ANN_PATH=../src/networkFile
 # -annpe $ANN_PATH/2.1.26.pe.100.0065.ann -annse $ANN_PATH/2.1.26.se.100.005.ann
+export MOSAIK_mfl=450
+export MOSAIK_annpe=/sw/apps/bioinfo/mosaik-aligner/2.2.30/milou/src/networkFile/2.1.26.se.100.005.ann
 export MOSAIK_DAT_ON_SCRATCH="yes"
 #MOSIK_DAT_ON_SCRATCH=yes
 
@@ -59,8 +59,6 @@ export AVDBDIR=$BASE/src/annovar/humandb
 export LOCAL_CLIN_DB="hg19_100clinical.real.avdb"
 export LOCAL_DANES_DB="hg19_200danes.avdb"
 export DB_SNP_VERSION="snp135NonFlagged"
-
-
 
 # UPPMAX avdbdir is not up to date
 #export AVDBDIR=/bubo/nobackup/uppnex/annotations/annovar/humandb/
