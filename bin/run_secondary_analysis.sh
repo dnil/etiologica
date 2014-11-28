@@ -244,6 +244,13 @@ then
 fi
 log "MOSAIK - annpe: $MOSAIK_annpe" "main"
 
+if [ -z "$MOSAIK_annse" ]
+then
+    $MOSAIK_annse=/sw/apps/bioinfo/mosaik-aligner/2.2.30/milou/src/networkFile/2.1.26.se.100.0065.ann
+fi
+log "MOSAIK - annse: $MOSAIK_annse" "main"
+
+
 if [ -z "$MOSAIK_TMP" ]
 then 
     export MOSAIK_TMP=$TMP
@@ -478,9 +485,9 @@ do
 	    then
 		if [ "$JUMP" == "yes" ]
 		then
-		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -hs $MOSAIK_mjump -bw $MOSAIK_sw_bandwidth -j $reference_jump -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -annpe $MOSAIK_annpe -p $MOSAIK_CORES"
+		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -hs $MOSAIK_mjump -bw $MOSAIK_sw_bandwidth -j $reference_jump -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -annse $MOSAIK_annse -annpe $MOSAIK_annpe -p $MOSAIK_CORES"
 		else
-		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -bw $MOSAIK_sw_bandwidth -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -annpe $MOSAIK_annpe -p $MOSAIK_CORES"
+		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -bw $MOSAIK_sw_bandwidth -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -annpe $MOSAIK_annpe -annse $MOSAIK_annse -p $MOSAIK_CORES"
 		fi
 		vanillaRun "$runme" "$patient_aln_mka" "temp" "MosaikAligner"
 	    fi
