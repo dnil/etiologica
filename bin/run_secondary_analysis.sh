@@ -433,6 +433,7 @@ do
 
 	patient_dat=${patient_fastq_gz%%fastq.gz}dat
 	if [ "$MATEPAIRS" == "0" ]
+	then
 	    patient_samplename=${patient_dat%%.dat}
 	else 
 	    patient_samplename=${patient_dat%%_1.dat}
