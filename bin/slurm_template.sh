@@ -46,7 +46,7 @@ export TEMP=$SNIC_TMP
 # -annpe $ANN_PATH/2.1.26.pe.100.0065.ann -annse $ANN_PATH/2.1.26.se.100.005.ann
 export MOSAIK_mfl=450
 export MOSAIK_annse=/sw/apps/bioinfo/mosaik-aligner/2.2.30/milou/src/networkFile/2.1.26.se.100.005.ann
-export MOSAIK_annpe=/sw/apps/bioinfo/mosaik-aligner/2.2.30/milou/src/networkFile/2.1.26.pe.100.005.ann
+export MOSAIK_annpe=/sw/apps/bioinfo/mosaik-aligner/2.2.30/milou/src/networkFile/2.1.26.pe.100.0065.ann
 export MOSAIK_DAT_ON_SCRATCH="yes"
 #MOSIK_DAT_ON_SCRATCH=yes
 

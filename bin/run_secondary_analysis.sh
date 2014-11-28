@@ -246,10 +246,9 @@ log "MOSAIK - annpe: $MOSAIK_annpe" "main"
 
 if [ -z "$MOSAIK_annse" ]
 then
-    $MOSAIK_annse=/sw/apps/bioinfo/mosaik-aligner/2.2.30/milou/src/networkFile/2.1.26.se.100.0065.ann
+    $MOSAIK_annse=/sw/apps/bioinfo/mosaik-aligner/2.2.30/milou/src/networkFile/2.1.26.se.100.005.ann
 fi
 log "MOSAIK - annse: $MOSAIK_annse" "main"
-
 
 if [ -z "$MOSAIK_TMP" ]
 then 
@@ -544,9 +543,9 @@ POD_MOSAIKDUP
 		patient_bam=${patient_bam##${MOSAIK_TMP}/}
 	    fi
 
-	    if needsUpdate ${patient_bam} ${patient_sorted} $MOSAIKBIN/MosaikText
+	    if needsUpdate ${patient_bam} ${patient_aln_mka} $MOSAIKBIN/MosaikText
 	    then
-		runme="$MOSAIKBIN/MosaikText -in $patient_sorted -bam $patient_bam"
+		runme="$MOSAIKBIN/MosaikText -in $patient_aln_mka -bam $patient_bam"
 		vanillaRun "$runme" "$patient_bam" "result" "MosaikText -bam"
 	    fi
 	fi
