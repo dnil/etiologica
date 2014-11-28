@@ -480,7 +480,7 @@ do
 		then
 		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -hs $MOSAIK_mjump -bw $MOSAIK_sw_bandwidth -j $reference_jump -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -annpe $MOSAIK_annpe -p $MOSAIK_CORES"
 		else
-		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -bw $MOSAIK_sw_bandwidth -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -mfl $MOSAIK_mfl -annpe $MOSAIK_annpe -p $MOSAIK_CORES"
+		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -bw $MOSAIK_sw_bandwidth -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -annpe $MOSAIK_annpe -p $MOSAIK_CORES"
 		fi
 		vanillaRun "$runme" "$patient_aln_mka" "temp" "MosaikAligner"
 	    fi
