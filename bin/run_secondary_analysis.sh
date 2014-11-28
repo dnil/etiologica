@@ -444,7 +444,7 @@ do
 
 	    echo "DEBUG: $final_patient_bam"
 
-	    if needsUpdate ${final_patient_bam} ${patient_fastq_gz} $MOSAIKBIN/MosaikBuild $MOSAIKBIN/MosaikAligner $MOSAIKBIN/MosaikText $reference_jump $MOSAIKBIN/MosaikDupSnoop $MOSAIKBIN/MosaikSort
+	    if needsUpdate ${final_patient_bam} ${patient_fastq_gz} $MOSAIKBIN/MosaikBuild $MOSAIKBIN/MosaikAligner $MOSAIKBIN/MosaikText $reference_jump
 	    then
 		run_align="yes"
 	    else

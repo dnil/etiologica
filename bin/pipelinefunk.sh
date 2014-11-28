@@ -251,10 +251,11 @@ function logMeta()
     local file=$1
     local message=$2
     
-    rundate=`date`
+    local rundate=`date`
+    local idstring=${HOSTNAME}"-"$$
     logfile="${file}.${PIPELINE}.log"
 
-    echo "[$rundate] $message" >>$logfile
+    echo "[$rundate $idstring] $message" >>$logfile
 }
 
 : <<'FUNCTION_LOGMETA_DOC'
@@ -302,11 +303,27 @@ function checkExitStatus()
 	log "Error caught: $message. Possible garbled ${garbled[@]}. Please see .pipeline.register.attention and the corresponding *.$PIPELINE.log files." "main"
 	for garb in "${garbled[@]}"
 	do
+	    logMeta "$garb" "Exit status fail: $message. File $garb may be incomplete." 
 	    registerFile $garb attention
 	done
 	exit $exitstatus
     fi
 }
+
+function logMetaVersion()
+{
+    local file=$1
+    local version_check_runme=$2
+    
+    local rundate=`date`
+    local idstring=${HOSTNAME}"-"$$
+
+    logfile="${file}.${PIPELINE}.log"
+
+    echo "[$rundate $idstring] $version_check_runme" >>$logfile
+    eval $version_check_runme >> $logfile
+}
+
 
 function vanillaRun()
 {
