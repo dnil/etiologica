@@ -378,7 +378,7 @@ if [ -z "$MATEPAIRS" ]
 then
     MATEPAIRS=1
     for patient_fastq_gz in patient/*_1.fastq.gz 
-    do
+    do	
 	possible_mate=${patient_fastq_gz%%_1.fastq.gz}_2.fastq.gz
 	if [ ! -s $possible_mate ] 
 	then
@@ -418,6 +418,7 @@ do
     # multilane samples start popping in this recommendation may change.
     #
 
+
     if workLockOk $patient_fastq_gz
     then
 	log "Locked $patient_fastq_gz for alignment, variant calling and annotation." "main"
@@ -431,6 +432,11 @@ do
 	# trim
 
 	patient_dat=${patient_fastq_gz%%fastq.gz}dat
+	if [ "$MATEPAIRS" == "0" ]
+	    patient_samplename=${patient_dat%%.dat}
+	else 
+	    patient_samplename=${patient_dat%%_1.dat}
+	fi
 
 	# If mosaik_dat_on_scratch is enabled, we only really want to redo all the dat files in case the final product mosaik bam is outdated. Yay, let us reinvent make!
 	run_align="yes"
@@ -459,14 +465,14 @@ do
 	    then
 		if needsUpdate $patient_dat $patient_fastq_gz
 		then
-		    runme="$MOSAIKBIN/MosaikBuild -q $patient_fastq_gz -out $patient_dat -st illumina"
+		    runme="$MOSAIKBIN/MosaikBuild -q $patient_fastq_gz -sam $patient_samplename -out $patient_dat -st illumina"
 		    vanillaRun "$runme" "$patient_dat" "temp" "MosaikBuild"
 		fi
 	    else
 		patient_2_fastq_gz=${patient_fastq_gz%%_1.fastq.gz}_2.fastq.gz
 		if needsUpdate $patient_dat $patient_fastq_gz $patient_2_fastq_gz
 		then
-		    runme="$MOSAIKBIN/MosaikBuild -q $patient_fastq_gz -q2 $patient_2_fastq_gz -mfl $MOSAIK_mfl -out $patient_dat -st illumina"
+		    runme="$MOSAIKBIN/MosaikBuild -q $patient_fastq_gz -q2 $patient_2_fastq_gz -sam $patient_samplename -mfl $MOSAIK_mfl -out $patient_dat -st illumina"
 		    vanillaRun "$runme" "$patient_dat" "temp" "MosaikBuild"
 		fi
 	    fi
@@ -553,35 +559,22 @@ POD_MOSAIKDUP
 	patient_bcf=${patient_fastq_gz%%fastq.gz}var.raw.bcf
 	if needsUpdate $patient_bcf $patient_bam $SAMTOOLS $BCFTOOLS
 	then
-	    runme="$SAMTOOLS mpileup -ugf $REFERENCE $patient_bam | $BCFTOOLS view -bvcg - > $patient_bcf"
-	    vanillaRun "$runme" "$patient_bcf" "temp" "samtools mpileup - bcftools view"
+	    runme="$SAMTOOLS mpileup -go $patient_bcf -f $REFERENCE $patient_bam"
+	    vanillaRun "$runme" "$patient_bcf" "temp" "samtools mpileup"
 	fi
 
-	patient_vcf=${patient_bcf%%raw.bcf}flt.vcf
+	patient_vcf=${patient_bcf%%raw.bcf}.vcf.gz
 	if needsUpdate $patient_vcf $patient_bcf $BCFTOOLS $VCFUTILS
 	then	    
-	    runme="$BCFTOOLS view $patient_bcf | $VCFUTILS varFilter $VCFUTILS_var_filter_settings > $patient_vcf"
-	    	    
-	    vanillaRun "$runme" "$patient_vcf" "result" "bcftools view |vcfutils varFilter |reheader"
-
-            # hotfix for "unknown" sample names from bad bam header @RG, required by GATK..
-	    # should instead reheader original bam or better yet pass metadata to Mosaik upon bam creation..
-	    reheader_vcf=${patient_vcf%%vcf}reheader.vcf
-
-	    patient_basename=`basename $patient_vcf`
-	    samplename=${patient_basename%%.var.flt.vcf}
-	    grep "^\#" $patient_vcf |sed -e 's/unknown/'$samplename'/;' > $reheader_vcf 
-	    grep -v "^\#" $patient_vcf >> $reheader_vcf
-	    mv $reheader_vcf $patient_vcf
-	    # end hotfix
+	    runme="$BCFTOOLS call -vmO z -o $patient_vcf $patient_bcf"
+	    vanillaRun "$runme" "$patient_vcf" "result" "bcftools call"
 	fi
 
-	noGLvcf=${patient_vcf%%.vcf}.noGL.vcf
-	patient_left_vcf=${noGLvcf%%.noGL.vcf}.leftAlign.vcf
-	if needsUpdate $patient_left_vcf $patient_vcf $GATKJAR
+	patient_left_vcf=${patient_vcf%%.flt.vcf.gz}.leftAlign.vcf
+	if needsUpdate $patient_left_vcf $patient_vcf $BCFTOOLS
 	then
-	    runme="grep -v GL0 $patient_vcf > $noGLvcf; java -Xmx2g -jar $GATKJAR -R $GATKREFERENCE -T LeftAlignVariants --variant $noGLvcf -o $patient_left_vcf"
-	    vanillaRun "$runme" "$patient_left_vcf" "result" "GATK LeftAlignVariants"
+	    runme="$BCFTOOLS norm -f $REFERENCE $patient_vcf -O z -o $patient_left_vcf"
+	    vanillaRun "$runme" "$patient_left_vcf" "result" "bcftools norm"
 	fi
 
 	releaseLock $patient_fastq_gz
