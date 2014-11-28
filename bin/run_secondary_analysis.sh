@@ -432,11 +432,12 @@ do
 	# trim
 
 	patient_dat=${patient_fastq_gz%%fastq.gz}dat
+	patient_dat_basename=`basename $patient_dat`
 	if [ "$MATEPAIRS" == "0" ]
 	then
-	    patient_samplename=${patient_dat%%.dat}
+	    patient_samplename=${patient_dat_basename%%.dat}
 	else 
-	    patient_samplename=${patient_dat%%_1.dat}
+	    patient_samplename=${patient_dat_basename%%_1.dat}
 	fi
 
 	# If mosaik_dat_on_scratch is enabled, we only really want to redo all the dat files in case the final product mosaik bam is outdated. Yay, let us reinvent make!
