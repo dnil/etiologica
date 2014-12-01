@@ -228,6 +228,9 @@ do
 	    vanillaRun "$runme" "$patient_pass_vcf" "result" "Filter VCF to pass."
 	fi
 
+	# changeout! e.g.
+        # bcftools filter -O z -o <study_filtered..vcf.gz> -s LOWQUAL -i'%QUAL>10' <study.vcf.gz>
+
 	patient_avlist=${patient_pass_vcf%%vcf}avlist
 	if needsUpdate $patient_avlist $patient_pass_vcf $ANNOVARBIN/convert2annovar.pl
 	then
@@ -239,10 +242,10 @@ do
 	patient_annovar_summarize_csv=${patient_avlist%%avlist}sum.genome_summary.csv	
 	if needsUpdate $patient_annovar_summarize_csv $patient_avlist $ANNOVAR_SUMMARIZE 
 	then
-	    runme="$TABLE_ANNOVAR --buildver hg19 -protocol refGene,phastConsElements46way,genomicSuperDups,popfreq_max,esp6500si_all,1000g2012apr_all,snp137,ljb2_all,clinvar_20131105 -operation g,r,r,f,f,f,f,f,f -remove -otherinfo -csvout $AVDBDIR"
+	    runme="$TABLE_ANNOVAR --buildver hg19 -vcfdbfile $LOCAL_CLIN_DB -protocol refGene,phastConsElements46way,genomicSuperDups,popfreq_max,exac02,esp6500si_all,1000g2012apr_all,vcf,snp138,cosmic,caddgt10,ljb2_all,clinvar_20131105 -operation g,r,r,f,f,f,f,f,f,f,f,f,f -remove -otherinfo -csvout $AVDBDIR"
 	    vanillaRun "$runme" "$patient_annovar_summarize_csv" "result" "ANNOVAR SUMMARIZE"
 	fi
-	# --localdb $LOCAL_CLIN_DB, ExAC, cosmic, ...
+	# --localdb $LOCAL_CLIN_DB (vcf..), ExAC, cosmic, ... 
 
 	# inheritance models
 
