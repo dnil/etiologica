@@ -527,21 +527,6 @@ POD_MOSAIKDUP
 #		fi
 #	    fi
 
-#	    patient_sorted=${patient_aln_dat%%dat}sorted.dat
-
-#	    if needsUpdate ${patient_sorted} $patient_aln_dat $MOSAIKBIN/MosaikSort
-#	    then
-#		if [ "$MATEPAIRS" == 0 ]
-#		then 
-#		    dupstring=""
-#		else
-#		    dupstring="-dup $patient_lib_dupdata_dir"
-#		fi
-		
-#		runme="$MOSAIKBIN/MosaikSort -in $patient_aln_dat -out $patient_sorted $dupstring"
-#		vanillaRun "$runme" "$patient_sorted" "temp" "MosaikSort"
-#	    fi
-
        # TODO: mosaik merge, when several libs for one patient are available.
 
 	    patient_bam=${patient_aln_mka%%mka.bam}bam
@@ -554,19 +539,20 @@ POD_MOSAIKDUP
 		#mv?
 	    fi
 
-#	    if needsUpdate ${patient_bam} ${patient_aln_mka}
-#	    then
-#		runme="$MOSAIKBIN/MosaikText -in $patient_aln_mka -bam $patient_bam"
-
-#		vanillaRun "$runme" "$patient_bam" "result" "MosaikText -bam"
-#	    fi
-#	fi
+	fi
 
 	patient_sorted=${patient_bam%%.bam}.sorted.bam
 	if needsUpdate ${patient_sorted_bam} ${patient_bam} $SAMTOOLS
 	then
 	    runme="$SAMTOOLS sort -O bam -o ${patient_sorted_bam} -T ${patient_bam}.tmp $patient_bam"
 	    vanillaRun "$runme" "$patient_bam" "result" "samtools sort"
+	fi
+
+	patient_sorted_index=${patient_sorted}.bai
+	if needsUpdate ${patient_sorted_index} ${patient_sorted_bam} $SAMTOOLS
+	then
+	    runme="$SAMTOOLS index ${patient_sorted_bam}"
+	    vanillaRun "$runme" "$patient_bam" "result" "samtools index"
 	fi
 
 	patient_bcf=${patient_fastq_gz%%fastq.gz}var.raw.bcf
