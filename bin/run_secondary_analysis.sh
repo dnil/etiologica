@@ -260,7 +260,7 @@ if [ -z "$MOSAIK_CORES" ]
 then
     if [ -z "$NPROC" ]
     then 
-	MOSAIK_CORES=10
+	MOSAIK_CORES=18
     else 
 	MOSAIK_CORES=$NPROC
     fi
@@ -544,18 +544,29 @@ POD_MOSAIKDUP
 
        # TODO: mosaik merge, when several libs for one patient are available.
 
-	    patient_bam=${patient_aln_mka%%mka}bam
+	    patient_bam=${patient_aln_mka%%mka.bam}bam
 
 	    if [ $MOSAIK_DAT_ON_SCRATCH == "yes" ] 
 	    then
 		patient_bam=${patient_bam##${MOSAIK_TMP}/}
+		runme="cp $patient_aln_mka $patient_bam"
+		vanillaRun "$runme" "$patient_bam" "result" "cp bam from scratch"
+		#mv?
 	    fi
 
-	    if needsUpdate ${patient_bam} ${patient_aln_mka} $MOSAIKBIN/MosaikText
-	    then
-		runme="$MOSAIKBIN/MosaikText -in $patient_aln_mka -bam $patient_bam"
-		vanillaRun "$runme" "$patient_bam" "result" "MosaikText -bam"
-	    fi
+#	    if needsUpdate ${patient_bam} ${patient_aln_mka}
+#	    then
+#		runme="$MOSAIKBIN/MosaikText -in $patient_aln_mka -bam $patient_bam"
+
+#		vanillaRun "$runme" "$patient_bam" "result" "MosaikText -bam"
+#	    fi
+#	fi
+
+	patient_sorted=${patient_bam%%.bam}.sorted.bam
+	if needsUpdate ${patient_sorted_bam} ${patient_bam} $SAMTOOLS
+	then
+	    runme="$SAMTOOLS sort -O bam -o ${patient_sorted_bam} -T ${patient_bam}.tmp $patient_bam"
+	    vanillaRun "$runme" "$patient_bam" "result" "samtools sort"
 	fi
 
 	patient_bcf=${patient_fastq_gz%%fastq.gz}var.raw.bcf
