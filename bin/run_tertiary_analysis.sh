@@ -164,19 +164,22 @@ then
     KGENOMES_VERSION="hg19_ALL.sites.2012_04"
     KGENOMES_DB="1000g2012apr"
 fi
-#hg19_ALL.sites.2010_11
-#1000g2010nov
-
-if [ -z "$ANNOVAR_PP2_BENIGN" ]
-then
-    ANNOVAR_PP2_BENIGN=0.85
-fi
-log "ANNOVAR PP2 BENIGN: $ANNOVAR_PP2_BENIGN" "main"
 
 if [ -z "$ANNOVAR_SPLICING_THRESHOLD" ]
 then
     ANNOVAR_SPLICING_THRESHOLD=5
 fi
+
+if [ -z "$PASS_QUAL" ]
+then
+    PASS_QUAL=25
+fi
+
+if [ -z "$BCFTOOLS" ]
+then 
+    BCFTOOLS=/home/daniel/src/samtools-0.1.18/bcftools/bcftools
+fi
+log "BCFTOOLS: $BCFTOOLS" "main"
 
 if [ -z "$TMP" ] 
 then
@@ -213,34 +216,29 @@ do
     then
 	log "Locked $patient_vcf for annotation." "main"
 
-	patient_left_vcf=${patient_vcf%%.vcf}.leftAlign.vcf
+	# generic baq-filter : NB need to avoid $6 being evaluated already att passing... PASS only?
+	# note: mpileup does not give PASS, only UnifiedGenotyper.. Go GATK.
+
+	patient_left_vcf=${patient_vcf%%.vcf.gz}.leftAlign.vcf
 	patient_pass_vcf=${patient_left_vcf%%vcf}pass.vcf
 	if needsUpdate $patient_pass_vcf $patient_left_vcf
 	then
-	    # generic baq-filter : NB need to avoid $6 being evaluated already att passing... PASS only?
-	    # note: mpileup does not give PASS, only UnifiedGenotyper.. Go GATK.
-	    # preserve header, change sample name from "unknown" to vcf file base name.
-
-	    patient_basename=`basename $patient_left_vcf`
-	    samplename=${patient_basename%%.var.flt.vcf}
-	    runme="grep ^\# $patient_left_vcf |sed -e 's/unknown/'$samplename'/;'> $patient_pass_vcf ; awk '(\$6>=30) { print; }' < $patient_left_vcf >> $patient_pass_vcf"
-#	    runme="awk '(\$7==\"PASS\") { print; }' < $patient_vcf > $patient_pass_vcf"
+            runme="$BCFTOOLS filter -O z -o $patient_pass_vcf -s LOWQUAL -i'%QUAL>$PASS_QUAL' $patient_left_vcf"
 	    vanillaRun "$runme" "$patient_pass_vcf" "result" "Filter VCF to pass."
 	fi
-
-	# changeout! e.g.
-        # bcftools filter -O z -o <study_filtered..vcf.gz> -s LOWQUAL -i'%QUAL>10' <study.vcf.gz>
-
+	
+	patient_pass_vcf_nogz=${patient_pass_vcf%%.gz}
 	patient_avlist=${patient_pass_vcf%%vcf}avlist
 	if needsUpdate $patient_avlist $patient_pass_vcf $ANNOVARBIN/convert2annovar.pl
 	then
-	    runme="$ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_pass_vcf > $patient_avlist"
-	    vanillaRun "$runme" "$patient_avlist" "result" "convert2annovar"
+	    
+	    runme="gunzip -c $patient_pass_vcf > ${patient_pass_vcf_nogz}; $ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_pass_vcf_nogz > $patient_avlist"
+	    vanillaRun "$runme" "$patient_avlist" "result" "gunzip vcf - convert2annovar"
 	fi
 
 	patient_annovar_summarize_base=${patient_avlist%%avlist}sum
-	patient_annovar_summarize_csv=${patient_avlist%%avlist}sum.genome_summary.csv	
-	if needsUpdate $patient_annovar_summarize_csv $patient_avlist $ANNOVAR_SUMMARIZE 
+	patient_annovar_summarize_csv=${patient_avlist%%avlist}sum.genome_summary.csv
+	if needsUpdate $patient_annovar_summarize_csv $patient_avlist $ANNOVAR_SUMMARIZE
 	then
 	    runme="$TABLE_ANNOVAR --buildver hg19 -vcfdbfile $LOCAL_CLIN_DB -protocol refGene,phastConsElements46way,genomicSuperDups,popfreq_max,exac02,esp6500si_all,1000g2012apr_all,vcf,snp138,cosmic,caddgt10,ljb2_all,clinvar_20131105 -operation g,r,r,f,f,f,f,f,f,f,f,f,f -remove -otherinfo -csvout $AVDBDIR"
 	    vanillaRun "$runme" "$patient_annovar_summarize_csv" "result" "ANNOVAR SUMMARIZE"

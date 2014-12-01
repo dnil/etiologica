@@ -54,18 +54,14 @@ export MOSAIK_DAT_ON_SCRATCH="yes"
 export BINDIR=$BASE/sandbox/etiologica/bin
 
 export ANNOVARBIN=$BASE/src/annovar
-export ANNOVAR_DISPENSABLE=$BASE/src/annovar/example/dispensable.all
-export ANNOVAR_1KG_MAF=0.02
-export ANNOVAR_PP2_BENIGN=0.85
 export AVDBDIR=$BASE/src/annovar/humandb
-export LOCAL_CLIN_DB="hg19_100clinical.real.avdb"
-export LOCAL_DANES_DB="hg19_200danes.avdb"
-export DB_SNP_VERSION="snp135NonFlagged"
+export LOCAL_CLIN_DB="hg19_clindb_140613.hbvdb.vcf"
+export DB_SNP_VERSION="snp138"
 
-# UPPMAX avdbdir is not up to date
-#export AVDBDIR=/bubo/nobackup/uppnex/annotations/annovar/humandb/
+export PASS_QUAL=25
 
 export FASTQC=$BASE/src/FastQC/fastqc
+export AVDBDIR=$ANNOVARBIN/humandb
 
 #cd /proj/b2011097/private/chr9q
 
