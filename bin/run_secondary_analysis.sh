@@ -574,21 +574,21 @@ POD_MOSAIKDUP
 	    vanillaRun "$runme" "$refence_faidx" "result" "samtools faidx"
 	fi
 
-	patient_bcf=${patient_fastq_gz%%fastq.gz}var.raw.bcf
+	patient_bcf=${patient_fastq_gz%%fastq.gz}bcf
 	if needsUpdate $patient_bcf $patient_sorted_bam $SAMTOOLS $BCFTOOLS
 	then
 	    runme="$SAMTOOLS mpileup -go $patient_bcf -f $REFERENCE $patient_sorted_bam"
 	    vanillaRun "$runme" "$patient_bcf" "temp" "samtools mpileup"
 	fi
 
-	patient_vcf=${patient_bcf%%raw.bcf}.vcf.gz
+	patient_vcf=${patient_bcf%%bcf}vcf.gz
 	if needsUpdate $patient_vcf $patient_bcf $BCFTOOLS $VCFUTILS
 	then	    
 	    runme="$BCFTOOLS call -vmO z -o $patient_vcf $patient_bcf"
 	    vanillaRun "$runme" "$patient_vcf" "result" "bcftools call"
 	fi
 
-	patient_left_vcf=${patient_vcf%%.flt.vcf.gz}.leftAlign.vcf
+	patient_left_vcf=${patient_vcf%%vcf.gz}.leftAlign.vcf.gz
 	if needsUpdate $patient_left_vcf $patient_vcf $BCFTOOLS
 	then
 	    runme="$BCFTOOLS norm -f $REFERENCE $patient_vcf -O z -o $patient_left_vcf"

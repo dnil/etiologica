@@ -232,8 +232,11 @@ do
 	if needsUpdate $patient_avlist $patient_pass_vcf $ANNOVARBIN/convert2annovar.pl
 	then
 	    
-	    runme="gunzip -c $patient_pass_vcf > ${patient_pass_vcf_nogz}; $ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_pass_vcf_nogz > $patient_avlist"
-	    vanillaRun "$runme" "$patient_avlist" "result" "gunzip vcf - convert2annovar"
+	    runme="gunzip -c $patient_pass_vcf > ${patient_pass_vcf_nogz}"	    
+	    vanillaRun "$runme" "$patient_pass_vcf_nogz" "result" "gunzip vcf"
+
+	    runme="$ANNOVARBIN/convert2annovar.pl -format vcf4 $patient_pass_vcf_nogz > $patient_avlist"
+	    vanillaRun "$runme" "$patient_avlist" "result" "convert2annovar vcf"
 	fi
 
 	patient_annovar_summarize_base=${patient_avlist%%avlist}sum

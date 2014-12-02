@@ -346,7 +346,6 @@ function logMetaVersion()
     eval $version_check_runme >> $logfile
 }
 
-
 function vanillaRun()
 {
     local runme=$1
@@ -356,6 +355,14 @@ function vanillaRun()
 
     registerFile "$main_result_file" "$main_result_category"
     logMeta "$main_result_file" "$runme"
+    
+    local logfile=$1
+    local myrunme=$2
+
+    logfile="${main_result_file}.${PIPELINE}.log"
+    _prepareLogfile $logfile
+    runme="${runme} 2>&1 |tee -a ${logfile}"
+
     eval $runme
     exitstatus=$?
     checkExitStatus "$exitstatus" "$label" "$main_result_file"
