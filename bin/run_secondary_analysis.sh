@@ -588,7 +588,7 @@ POD_MOSAIKDUP
 	    vanillaRun "$runme" "$patient_vcf" "result" "bcftools call"
 	fi
 
-	patient_left_vcf=${patient_vcf%%vcf.gz}.leftAlign.vcf.gz
+	patient_left_vcf=${patient_vcf%%vcf.gz}leftAlign.vcf.gz
 	if needsUpdate $patient_left_vcf $patient_vcf $BCFTOOLS
 	then
 	    runme="$BCFTOOLS norm -f $REFERENCE $patient_vcf -O z -o $patient_left_vcf"
