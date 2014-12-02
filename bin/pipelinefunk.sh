@@ -255,7 +255,7 @@ function logMeta()
     local idstring=${HOSTNAME}"-"$$
 
     logfile="${file}.${PIPELINE}.log"
-    if [! -z "$LOG_DIR" ]
+    if [ ! -z "$LOG_DIR" ]
     then 
 	logfile="${LOG_DIR}/$logfile"
     fi
@@ -293,7 +293,7 @@ function log()
     local idstring=${HOSTNAME}"-"$$
 
     logfile="${PIPELINE}.${category}.log"
-    if [! -z "$LOG_DIR" ]
+    if [ ! -z "$LOG_DIR" ]
     then 
 	logfile="${LOG_DIR}/$logfile"
     fi
@@ -328,7 +328,7 @@ function logMetaVersion()
     local idstring=${HOSTNAME}"-"$$
 
     logfile="${file}.${PIPELINE}.log"
-    if [! -z "$LOG_DIR" ]
+    if [ ! -z "$LOG_DIR" ]
     then 
 	logfile="${LOG_DIR}/$logfile"
     fi
