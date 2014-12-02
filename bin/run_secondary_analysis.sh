@@ -486,17 +486,18 @@ do
 		dupstring=""
 	    fi
 	    
-	    patient_aln_mka=${patient_dat%%dat}mosaik.mka
+	    patient_aln_bam=${patient_dat%%dat}mosaik.bam
+	    patient_aln_base=${patient_aln_bam%%bam}
 
-	    if needsUpdate $patient_aln_mka $patient_dat $reference_jump $MOSAIKBIN/MosaikAligner
+	    if needsUpdate $patient_aln_bam $patient_dat $reference_jump $MOSAIKBIN/MosaikAligner
 	    then
 		if [ "$JUMP" == "yes" ]
 		then
-		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -hs $MOSAIK_mjump -bw $MOSAIK_sw_bandwidth -j $reference_jump -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -annse $MOSAIK_annse -annpe $MOSAIK_annpe -p $MOSAIK_CORES"
+		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out ${patient_aln_base} -m $MOSAIK_ALIGN_MODE -hs $MOSAIK_mjump -bw $MOSAIK_sw_bandwidth -j $reference_jump -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -annse $MOSAIK_annse -annpe $MOSAIK_annpe -p $MOSAIK_CORES"
 		else
-		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out $patient_aln_mka -m $MOSAIK_ALIGN_MODE -bw $MOSAIK_sw_bandwidth -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -annpe $MOSAIK_annpe -annse $MOSAIK_annse -p $MOSAIK_CORES"
+		    runme="$MOSAIKBIN/MosaikAligner -in $patient_dat -ia $reference_dat -out ${patient_aln_base} -m $MOSAIK_ALIGN_MODE -bw $MOSAIK_sw_bandwidth -mm $MOSAIK_mismatches -act $MOSAIK_clustersize -annpe $MOSAIK_annpe -annse $MOSAIK_annse -p $MOSAIK_CORES"
 		fi
-		vanillaRun "$runme" "$patient_aln_mka" "temp" "MosaikAligner"
+		vanillaRun "$runme" "$patient_aln_bam" "temp" "MosaikAligner"
 	    fi
 
 	    : <<POD_MOSAIKDUP
@@ -529,12 +530,12 @@ POD_MOSAIKDUP
 
        # TODO: mosaik merge, when several libs for one patient are available.
 
-	    patient_bam=${patient_aln_mka%%mka.bam}bam
+	    patient_bam=${patient_aln_bam}
 
 	    if [ $MOSAIK_DAT_ON_SCRATCH == "yes" ] 
 	    then
 		patient_bam=${patient_bam##${MOSAIK_TMP}/}
-		runme="cp $patient_aln_mka $patient_bam"
+		runme="cp $patient_aln_bam $patient_bam"
 		vanillaRun "$runme" "$patient_bam" "result" "cp bam from scratch"
 		#mv?
 	    fi
