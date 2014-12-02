@@ -487,7 +487,7 @@ do
 	    fi
 	    
 	    patient_aln_bam=${patient_dat%%dat}mosaik.bam
-	    patient_aln_base=${patient_aln_bam%%bam}
+	    patient_aln_base=${patient_aln_bam%%.bam}
 
 	    if needsUpdate $patient_aln_bam $patient_dat $reference_jump $MOSAIKBIN/MosaikAligner
 	    then
