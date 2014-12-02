@@ -99,6 +99,16 @@ fi
 
 # load pipeline library and commence logging.
 
+if [ -z "$LOG_DIR" ]
+then 
+    export LOG_DIR=log
+fi
+
+if [ ! -d "$LOG_DIR" ]
+then
+    mkdir $LOG_DIR
+fi
+
 PIPELINE=etiologica
 PIPELINEFUNK=$BINDIR/pipelinefunk.sh
 
@@ -535,21 +545,22 @@ POD_MOSAIKDUP
 	    if [ $MOSAIK_DAT_ON_SCRATCH == "yes" ] 
 	    then
 		patient_bam=${patient_bam##${MOSAIK_TMP}/}
-		runme="cp $patient_aln_bam $patient_bam"
+		runme="cp -a $patient_aln_bam $patient_bam"
 		vanillaRun "$runme" "$patient_bam" "result" "cp bam from scratch"
-		#mv?
-	    fi
 
+		# also copy logs for audit trail n debug
+		cp -a $MOSAIK_TMP/*log $MOSAIK_TMP/*stat $LOG_DIR/
+	    fi
 	fi
 
-	patient_sorted=${patient_bam%%.bam}.sorted.bam
+	patient_sorted_bam=${patient_bam%%.bam}.sorted.bam
 	if needsUpdate ${patient_sorted_bam} ${patient_bam} $SAMTOOLS
 	then
 	    runme="$SAMTOOLS sort -O bam -o ${patient_sorted_bam} -T ${patient_bam}.tmp $patient_bam"
 	    vanillaRun "$runme" "$patient_bam" "result" "samtools sort"
 	fi
 
-	patient_sorted_index=${patient_sorted}.bai
+	patient_sorted_index=${patient_sorted_bam}.bai
 	if needsUpdate ${patient_sorted_index} ${patient_sorted_bam} $SAMTOOLS
 	then
 	    runme="$SAMTOOLS index ${patient_sorted_bam}"
@@ -557,9 +568,9 @@ POD_MOSAIKDUP
 	fi
 
 	patient_bcf=${patient_fastq_gz%%fastq.gz}var.raw.bcf
-	if needsUpdate $patient_bcf $patient_bam $SAMTOOLS $BCFTOOLS
+	if needsUpdate $patient_bcf $patient_sorted_bam $SAMTOOLS $BCFTOOLS
 	then
-	    runme="$SAMTOOLS mpileup -go $patient_bcf -f $REFERENCE $patient_bam"
+	    runme="$SAMTOOLS mpileup -go $patient_bcf -f $REFERENCE $patient_sorted_bam"
 	    vanillaRun "$runme" "$patient_bcf" "temp" "samtools mpileup"
 	fi
 

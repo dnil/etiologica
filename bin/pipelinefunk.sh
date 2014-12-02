@@ -253,7 +253,12 @@ function logMeta()
     
     local rundate=`date`
     local idstring=${HOSTNAME}"-"$$
+
     logfile="${file}.${PIPELINE}.log"
+    if [! -z "$LOG_DIR" ]
+    then 
+	logfile="${LOG_DIR}/$logfile"
+    fi
 
     echo "[$rundate $idstring] $message" >>$logfile
 }
@@ -288,6 +293,10 @@ function log()
     local idstring=${HOSTNAME}"-"$$
 
     logfile="${PIPELINE}.${category}.log"
+    if [! -z "$LOG_DIR" ]
+    then 
+	logfile="${LOG_DIR}/$logfile"
+    fi
     echo "[$rundate $idstring] $message" >>$logfile
 }
 
@@ -319,6 +328,10 @@ function logMetaVersion()
     local idstring=${HOSTNAME}"-"$$
 
     logfile="${file}.${PIPELINE}.log"
+    if [! -z "$LOG_DIR" ]
+    then 
+	logfile="${LOG_DIR}/$logfile"
+    fi
 
     echo "[$rundate $idstring] $version_check_runme" >>$logfile
     eval $version_check_runme >> $logfile
