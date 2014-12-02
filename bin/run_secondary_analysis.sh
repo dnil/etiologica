@@ -557,14 +557,21 @@ POD_MOSAIKDUP
 	if needsUpdate ${patient_sorted_bam} ${patient_bam} $SAMTOOLS
 	then
 	    runme="$SAMTOOLS sort -O bam -o ${patient_sorted_bam} -T ${patient_bam}.tmp $patient_bam"
-	    vanillaRun "$runme" "$patient_bam" "result" "samtools sort"
+	    vanillaRun "$runme" "$patient_sorted_bam" "result" "samtools sort"
 	fi
 
 	patient_sorted_index=${patient_sorted_bam}.bai
 	if needsUpdate ${patient_sorted_index} ${patient_sorted_bam} $SAMTOOLS
 	then
 	    runme="$SAMTOOLS index ${patient_sorted_bam}"
-	    vanillaRun "$runme" "$patient_bam" "result" "samtools index"
+	    vanillaRun "$runme" "$patient_sorted_index" "result" "samtools index"
+	fi
+
+	reference_faidx=${REFERENCE}.gzi
+	if needsUpdate ${reference_faidx} ${REFERENCE} $SAMTOOLS
+	then
+	    runme="$SAMTOOLS faidx ${REFERENCE}"
+	    vanillaRun "$runme" "$refence_faidx" "result" "samtools faidx"
 	fi
 
 	patient_bcf=${patient_fastq_gz%%fastq.gz}var.raw.bcf
