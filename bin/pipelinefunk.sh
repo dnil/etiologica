@@ -38,6 +38,9 @@ will then not be rerun upon a restart, unless a dependent data or
 script file is updated. So take care to clean any such
 incomplete/incorrect files before resuming.
 
+If environment variable LOG_DIR is set, place all logs in LOG_DIR, otherwise in same dir
+as the original file.
+
 =back 
 
 =head1 APPENDIX
@@ -246,6 +249,20 @@ commands to recreate file, versions of creating program etc.
 
 FUNCTION_LOGMETA_DOC
 
+function _prepareLogfile()
+{
+    local mylogfile=$1
+    if [ ! -z "$LOG_DIR" ]
+    then 
+	mylogfile="${LOG_DIR}/$logfile"
+	mylogdir=`dirname $mylogfile`
+	if [ ! -d $logdir ]
+	then
+	    mkdir $logdir
+	fi
+    fi
+}
+
 function logMeta()
 {
     local file=$1
@@ -255,15 +272,12 @@ function logMeta()
     local idstring=${HOSTNAME}"-"$$
 
     logfile="${file}.${PIPELINE}.log"
-    if [ ! -z "$LOG_DIR" ]
-    then 
-	logfile="${LOG_DIR}/$logfile"
-    fi
+    _prepareLogfile $logfile
 
     echo "[$rundate $idstring] $message" >>$logfile
 }
 
-: <<'FUNCTION_LOGMETA_DOC'
+: <<'FUNCTION_LOG_DOC'
 
 =head2 log(message, category)
 
@@ -276,7 +290,7 @@ stored locally and then concatenated to log (using this function) as one string.
 
 =cut
 
-FUNCTION_LOGMETA_DOC
+FUNCTION_LOG_DOC
 
 # todo: message array 
 function log()
@@ -293,12 +307,10 @@ function log()
     local idstring=${HOSTNAME}"-"$$
 
     logfile="${PIPELINE}.${category}.log"
-    if [ ! -z "$LOG_DIR" ]
-    then 
-	logfile="${LOG_DIR}/$logfile"
-    fi
+    _prepareLogfile $logfile
     echo "[$rundate $idstring] $message" >>$logfile
 }
+
 
 function checkExitStatus()
 {
@@ -328,10 +340,7 @@ function logMetaVersion()
     local idstring=${HOSTNAME}"-"$$
 
     logfile="${file}.${PIPELINE}.log"
-    if [ ! -z "$LOG_DIR" ]
-    then 
-	logfile="${LOG_DIR}/$logfile"
-    fi
+    _prepareLogfile $logfile
 
     echo "[$rundate $idstring] $version_check_runme" >>$logfile
     eval $version_check_runme >> $logfile
