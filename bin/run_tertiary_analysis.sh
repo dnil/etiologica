@@ -202,7 +202,7 @@ log "pipeline git status: $pipeline_git_status" "main"
 
 ### end environment variable processing
 
-patient_vcf_list=( patient/*flt.vcf )
+patient_vcf_list=( patient/*vcf.gz )
 
 for patient_vcf in ${patient_vcf_list[@]}
 do 
