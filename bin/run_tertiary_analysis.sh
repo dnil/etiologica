@@ -219,8 +219,8 @@ do
 	# generic baq-filter : NB need to avoid $6 being evaluated already att passing... PASS only?
 	# note: mpileup does not give PASS, only UnifiedGenotyper.. Go GATK.
 
-	patient_left_vcf=${patient_vcf%%.vcf.gz}.leftAlign.vcf
-	patient_pass_vcf=${patient_left_vcf%%vcf}pass.vcf
+	patient_left_vcf=${patient_vcf%%.vcf.gz}.leftAlign.vcf.gz
+	patient_pass_vcf=${patient_left_vcf%%vcf}pass.vcf.gz
 	if needsUpdate $patient_pass_vcf $patient_left_vcf
 	then
             runme="$BCFTOOLS filter -O z -o $patient_pass_vcf -s LOWQUAL -i'%QUAL>$PASS_QUAL' $patient_left_vcf"
@@ -231,7 +231,6 @@ do
 	patient_avlist=${patient_pass_vcf%%vcf}avlist
 	if needsUpdate $patient_avlist $patient_pass_vcf $ANNOVARBIN/convert2annovar.pl
 	then
-	    
 	    runme="gunzip -c $patient_pass_vcf > ${patient_pass_vcf_nogz}"	    
 	    vanillaRun "$runme" "$patient_pass_vcf_nogz" "result" "gunzip vcf"
 
