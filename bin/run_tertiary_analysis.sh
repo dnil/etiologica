@@ -99,9 +99,9 @@ then
 fi
 log "ANNOVARBIN: $ANNOVARBIN" "main"
 
-if [ -z "$ANNOVAR_SUMMARIZE" ]
+if [ -z "$TABLE_ANNOVAR" ]
 then 
-    ANNOVAR_SUMMARIZE="$ANNOVARBIN/summarize_annovar_custom.pl"
+    TABLE_ANNOVAR="$ANNOVARBIN/table_annovar.pl"
 fi
 
 if [ -z "$AVDBDIR" ]
@@ -219,16 +219,15 @@ do
 	# generic baq-filter : NB need to avoid $6 being evaluated already att passing... PASS only?
 	# note: mpileup does not give PASS, only UnifiedGenotyper.. Go GATK.
 
-	patient_left_vcf=${patient_vcf%%.vcf.gz}.leftAlign.vcf.gz
-	patient_pass_vcf=${patient_left_vcf%%vcf}pass.vcf.gz
-	if needsUpdate $patient_pass_vcf $patient_left_vcf
+	patient_pass_vcf=${patient_vcf%%vcf.gz}pass.vcf.gz
+	if needsUpdate $patient_pass_vcf $patient_vcf
 	then
-            runme="$BCFTOOLS filter -O z -o $patient_pass_vcf -s LOWQUAL -i'%QUAL>$PASS_QUAL' $patient_left_vcf"
+            runme="$BCFTOOLS filter -O z -o $patient_pass_vcf -s LOWQUAL -i'%QUAL>$PASS_QUAL' $patient_vcf"
 	    vanillaRun "$runme" "$patient_pass_vcf" "result" "Filter VCF to pass."
 	fi
 	
 	patient_pass_vcf_nogz=${patient_pass_vcf%%.gz}
-	patient_avlist=${patient_pass_vcf%%vcf}avlist
+	patient_avlist=${patient_pass_vcf%%vcf.gz}avlist
 	if needsUpdate $patient_avlist $patient_pass_vcf $ANNOVARBIN/convert2annovar.pl
 	then
 	    runme="gunzip -c $patient_pass_vcf > ${patient_pass_vcf_nogz}"	    
@@ -242,8 +241,8 @@ do
 	patient_annovar_summarize_csv=${patient_avlist%%avlist}sum.genome_summary.csv
 	if needsUpdate $patient_annovar_summarize_csv $patient_avlist $ANNOVAR_SUMMARIZE
 	then
-	    runme="$TABLE_ANNOVAR --buildver hg19 -vcfdbfile $LOCAL_CLIN_DB -protocol refGene,phastConsElements46way,genomicSuperDups,popfreq_max,exac02,esp6500si_all,1000g2012apr_all,vcf,snp138,cosmic,caddgt10,ljb2_all,clinvar_20131105 -operation g,r,r,f,f,f,f,f,f,f,f,f,f -remove -otherinfo -csvout $AVDBDIR"
-	    vanillaRun "$runme" "$patient_annovar_summarize_csv" "result" "ANNOVAR SUMMARIZE"
+	    runme="$TABLE_ANNOVAR --buildver hg19 -vcfdbfile $LOCAL_CLIN_DB -protocol refGene,phastConsElements46way,genomicSuperDups,popfreq_max,exac03,esp6500siv2_all,1000g2014oct_all,vcf,snp138,cosmic70,caddgt10,ljb2_all,clinvar_20150330 -operation g,r,r,f,f,f,f,f,f,f,f,f,f -remove -otherinfo -csvout $patient_avlist $AVDBDIR"
+	    vanillaRun "$runme" "$patient_annovar_summarize_csv" "result" "ANNOVAR TABLE"
 	fi
 	# --localdb $LOCAL_CLIN_DB (vcf..), ExAC, cosmic, ... 
 
